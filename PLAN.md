@@ -31,7 +31,11 @@
   - API-SPEC.md의 "PRD에 없어 정한 것" 9개는 사용자 검토 후 확정함.
 
 ## 2장: 그룹과 멤버
-- [ ] T06: groups, members 모델과 마이그레이션을 만든다. 확인: SHOW CREATE TABLE로 invite_code UNIQUE, token UNIQUE, (group_id, nickname) UNIQUE를 확인한다.
+- [x] T06: groups, members 모델과 마이그레이션을 만든다. 확인: SHOW CREATE TABLE로 invite_code UNIQUE, token UNIQUE, (group_id, nickname) UNIQUE를 확인한다.
+  - 변경 파일: backend/app/models/(__init__.py, base.py, group.py, member.py), backend/app/database.py(제약 이름 규칙), backend/alembic/env.py(app.models 등록), backend/alembic/versions/98332c10d989_create_groups_and_members.py
+  - 실행: alembic revision --autogenerate -m "create groups and members", alembic upgrade head
+  - 확인 결과 (2026-10-14): SHOW CREATE TABLE에서 uq_groups_invite_code(invite_code), uq_members_token(token), uq_members_group_id_nickname(group_id, nickname), fk_members_group_id_groups 확인. 트랜잭션 시험(ROLLBACK)에서 같은 그룹 같은 닉네임·같은 토큰·없는 그룹은 거절, 다른 그룹 같은 닉네임은 허용. 시험 후 두 테이블 0행. downgrade base → upgrade head 왕복 정상.
+  - 남은 오류: 없음. 참고로 utf8mb4_unicode_ci라 닉네임 비교는 대소문자를 구분하지 않음(Minji = minji).
 - [ ] T07: POST /groups, POST /groups/join, GET /me를 구현한다 (F01, F02). 확인: /docs에서 그룹 생성과 입장 후 토큰으로 /me 조회. 빈 그룹명 422, 중복 닉네임 409, 없는 초대 코드 404, 토큰 없음 401.
 - [ ] T08: 입장 화면을 만들고 토큰을 localStorage(lunch-token-v1)에 저장·복원한다. 확인: 일반 창과 시크릿 창에서 다른 닉네임으로 같은 그룹에 입장된다. 새로고침 후에도 유지되고, 토큰을 지우면 입장 화면으로 이동한다.
 
