@@ -948,3 +948,12 @@ button.danger {
   justify-content: space-between;
   gap: 8px;
 }
+
+.creator-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.creator-actions .close-button {
+  flex: 1;
+}

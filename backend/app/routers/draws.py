@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.mysql import insert as mysql_insert
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
@@ -17,6 +17,7 @@ router = APIRouter(prefix="/groups/{group_id}/draws", tags=["draws"])
 
 VOTE_RETRIES = 3
 CLOSE_RETRIES = 2
+REDRAW_RETRIES = 2
 # MariaDB: 1020 Record has changed since last read, 1213 Deadlock found
 RETRYABLE_DB_ERRORS = {1020, 1213}
 
@@ -214,6 +215,71 @@ def _close_once(db: Session, draw_id: int, member: Member) -> DrawSession:
         # 다른 요청이 먼저 방문 기록을 만든 경우: 그 결과를 그대로 돌려준다.
         db.rollback()
     return draw
+
+
+@router.post("/{draw_id}/redraw", response_model=DrawOut)
+def redraw(draw_id: int, member: Member = Depends(get_current_member), db: Session = Depends(get_db)):
+    """F09: 뽑기를 만든 멤버만 세션당 1회. 처음 조건으로 다시 뽑되 직전 후보는 빼고, 기존 투표는 지운다.
+
+    남는 식당이 없으면 422이고 기존 후보·투표·다시 뽑기 기회는 그대로 둔다 (API-SPEC 정한 것 7).
+    """
+    # commit 뒤 ORM 객체를 읽으면 잠금 전에 읽기 시점이 잡히므로 필요한 값을 먼저 꺼낸다 (T21E 참고).
+    member_id, group_id = member.id, member.group_id
+    for attempt in range(REDRAW_RETRIES):
+        try:
+            draw = _redraw_once(db, draw_id, member_id, group_id)
+            break
+        except OperationalError as exc:
+            db.rollback()
+            if exc.orig.args[0] not in RETRYABLE_DB_ERRORS or attempt == REDRAW_RETRIES - 1:
+                raise
+    db.refresh(draw)
+    return _draw_out(db, draw, member)
+
+
+def _redraw_once(db: Session, draw_id: int, member_id: int, group_id: int) -> DrawSession:
+    db.commit()  # 잠금부터 새 트랜잭션으로 시작한다 (MariaDB 1020 방지)
+    draw = db.scalar(
+        select(DrawSession)
+        .where(DrawSession.id == draw_id, DrawSession.group_id == group_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    try:
+        if draw is None:
+            raise api_error(404, "DRAW_NOT_FOUND", "뽑기를 찾을 수 없습니다.")
+        if draw.created_by != member_id:
+            raise api_error(403, "NOT_DRAW_CREATOR", "뽑기를 만든 사람만 다시 뽑을 수 있습니다.")
+        if draw.status != DrawStatus.OPEN:
+            raise api_error(409, "DRAW_CLOSED", "이미 마감된 뽑기입니다.")
+        if draw.redraw_used:
+            raise api_error(409, "REDRAW_ALREADY_USED", "다시 뽑기는 한 번만 할 수 있습니다.")
+
+        current_round, candidates = _current_candidates(draw)
+        restaurants = db.scalars(
+            select(Restaurant).where(Restaurant.group_id == group_id, Restaurant.deleted_at.is_(None))
+        ).all()
+        try:
+            picked = pick_candidates(
+                restaurants,
+                DrawFilters.from_dict(draw.filters),
+                exclude_ids=[c.restaurant_id for c in candidates],
+                visited_ids=real_visited_restaurant_ids(db, group_id),
+            )
+        except NoCandidatesError:
+            raise api_error(422, "NO_CANDIDATES", "직전 후보를 빼면 조건에 맞는 식당이 없어요.")
+
+        db.execute(delete(Vote).where(Vote.session_id == draw.id))
+        for r in picked:
+            db.add(SessionCandidate(session_id=draw.id, restaurant_id=r.id, round=current_round + 1))
+        draw.redraw_used = True
+        db.commit()
+        db.expire(draw, ["candidates"])
+        return draw
+    except Exception:
+        db.rollback()
+        raise
+
 
 def _get_draw(db: Session, draw_id: int, member: Member, for_update: bool = False) -> DrawSession:
     """내 그룹의 뽑기. 없거나 다른 그룹이면 404. for_update면 행을 잠가 마감 요청을 한 번에 하나씩 처리한다."""

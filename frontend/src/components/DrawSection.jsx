@@ -17,7 +17,7 @@ function formatKst(utcIso) {
   })
 }
 
-// F07~F11: 조건 폼 → 뒤집힌 카드와 투표(3초 갱신) → 마감 결과.
+// F07~F11: 조건 폼 → 뒤집힌 카드와 투표(3초 갱신, 생성자는 1회 다시 뽑기 F09) → 마감 결과.
 function DrawSection({ groupId, myMemberId, onDecided }) {
   const [draw, setDraw] = useState(undefined) // undefined: 불러오는 중, null: 진행 중인 뽑기 없음
   const [loadError, setLoadError] = useState('')
@@ -143,6 +143,11 @@ function DrawSection({ groupId, myMemberId, onDecided }) {
     mutate(`/groups/${groupId}/draws/${draw.id}/vote`, { method: 'PUT', body: { restaurant_id: restaurantId } })
   }
 
+  function redraw() {
+    if (!window.confirm('후보를 다시 뽑을까요? 지금 후보는 빠지고 모든 투표가 초기화돼요. (1회만 가능)')) return
+    mutate(`/groups/${groupId}/draws/${draw.id}/redraw`, { method: 'POST' })
+  }
+
   function close() {
     if (!window.confirm('투표를 마감할까요? 지금 득표로 오늘의 점심이 정해져요.')) return
     mutate(`/groups/${groupId}/draws/${draw.id}/close`, { method: 'POST' })
@@ -152,8 +157,8 @@ function DrawSection({ groupId, myMemberId, onDecided }) {
     <section className="draw-section">
       <h3>오늘의 뽑기</h3>
       <p className="hint">
-        {draw.created_by.nickname}님이 뽑은 후보 {draw.candidates.length}곳 · {revealedIds.length}장 공개 · 3초마다
-        갱신
+        {draw.created_by.nickname}님이 뽑은 후보 {draw.candidates.length}곳
+        {draw.round > 1 && ' (다시 뽑음)'} · {revealedIds.length}장 공개 · 3초마다 갱신
       </p>
       {loadError && <p className="error">연결이 불안정해요. 다시 시도하는 중... ({loadError})</p>}
       <div className="draw-cards">
@@ -189,9 +194,16 @@ function DrawSection({ groupId, myMemberId, onDecided }) {
       )}
 
       {isCreator ? (
-        <button type="button" className="primary close-button" onClick={close} disabled={busy}>
-          투표 마감하기
-        </button>
+        <div className="creator-actions">
+          {!draw.redraw_used && (
+            <button type="button" onClick={redraw} disabled={busy}>
+              다시 뽑기 (1회)
+            </button>
+          )}
+          <button type="button" className="primary close-button" onClick={close} disabled={busy}>
+            투표 마감하기
+          </button>
+        </div>
       ) : (
         <p className="hint">{draw.created_by.nickname}님이 마감하면 결과가 나와요.</p>
       )}
