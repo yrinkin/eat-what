@@ -4,11 +4,13 @@
 팀원들이 함께 쓰는 식당 목록에서 카드 뽑기로 후보를 추리고, 투표로 점심 장소를 정한 뒤 방문 후 별점을 남긴다.
 
 ## 사용자와 범위
-3~10명 팀이 함께 쓰는 학습용 웹앱이다. 회원가입 없이 그룹 초대 코드와 닉네임으로 입장한다. 휴대폰과 PC 브라우저에서 모두 사용한다. 첫 구현은 그룹 입장, 식당 등록, 목록 표시만 만든다. 이후 기능을 하나씩 추가한다.
+3~10명 팀이 함께 쓰는 학습용 웹앱이다. 아이디와 비밀번호로 회원가입·로그인한 뒤, 그룹을 만들거나 초대 코드로 참여한다. 한 계정은 여러 그룹에 속할 수 있고, 내 그룹 목록에서 그룹을 골라 들어간다. 휴대폰과 PC 브라우저에서 모두 사용한다. 첫 구현은 계정, 그룹, 식당 등록, 목록 표시만 만든다. 이후 기능을 하나씩 추가한다.
 
 ## 요구사항
-- F01: 공백 제거 후 1~30자의 그룹명과 닉네임으로 그룹을 만든다. 영문 대문자와 숫자로 된 6자리 초대 코드를 발급한다.
-- F02: 초대 코드와 공백 제거 후 1~20자의 닉네임으로 그룹에 입장한다. 닉네임은 그룹 안에서 중복될 수 없다. 서버가 발급한 멤버 토큰을 브라우저에 저장한다.
+- F14: 아이디, 비밀번호, 닉네임으로 회원가입한다. 아이디는 영문 소문자·숫자·밑줄 4~20자, 비밀번호는 8~64자, 닉네임은 공백 제거 후 1~20자다. 아이디와 닉네임은 전체 서비스에서 중복될 수 없다. 비밀번호는 해시로만 저장한다.
+- F15: 아이디와 비밀번호로 로그인하면 서버가 세션 토큰을 발급하고 브라우저에 저장한다. 토큰은 30일 동안 유효하다. 로그인 실패 시 아이디와 비밀번호 중 무엇이 틀렸는지 알려 주지 않는다. 로그아웃하면 그 토큰을 서버에서 무효화한다.
+- F01: 로그인한 사용자가 공백 제거 후 1~30자의 그룹명으로 그룹을 만들고 첫 멤버가 된다. 영문 대문자와 숫자로 된 6자리 초대 코드를 발급한다.
+- F02: 로그인한 사용자가 초대 코드로 그룹에 참여한다. 이미 참여한 그룹에는 다시 참여할 수 없다. 내가 속한 그룹 목록을 보고 그룹을 골라 들어간다. 그룹 안에서는 계정의 닉네임으로 표시된다.
 - F03: 식당을 등록하고 수정한다. 이름은 공백 제거 후 1~50자로 필수다. 카테고리는 KOREAN, CHINESE, JAPANESE, WESTERN, SNACK, ASIAN, ETC 중 하나로 필수다.
 - F04: 가격대는 1(1만 원 이하), 2(1~1.5만 원), 3(1.5만 원 초과)이며 기본값은 2이다. 도보 시간은 0~60분 정수이며 미지정은 null이다. 지도 링크는 선택 URL이며 미지정은 null이다. 메모는 최대 200자이며 기본값은 빈 문자열이다.
 - F05: 식당 삭제 전 확인하며 취소하면 항목이 유지된다. 삭제한 식당은 목록과 뽑기에서 빠지지만 방문 기록과 별점은 남는다.
@@ -22,16 +24,16 @@
 - F13: 식당 상세에서 팀 평균 별점(소수 첫째 자리), 방문 이력, 한 줄 평 목록을 확인한다.
 
 ## 데이터
-groups(id, name, invite_code, created_at), members(id, group_id, nickname, token, created_at), restaurants(id, group_id, name, category, price_level, walk_minutes, map_url, memo, created_by, created_at, deleted_at), draw_sessions(id, group_id, created_by, filters, status, redraw_used, decided_restaurant_id, created_at, closed_at), session_candidates(id, session_id, restaurant_id, round), votes(id, session_id, member_id, restaurant_id, updated_at), visits(id, group_id, restaurant_id, session_id, visited_on), reviews(id, visit_id, member_id, rating, comment, created_at)를 사용한다. 수정, 삭제, 투표는 화면 순번이 아닌 고유 id로 처리한다. 모든 조회와 변경은 토큰이 속한 그룹 안에서만 허용한다. 시각은 UTC로 저장하고 화면에서 한국 시간으로 표시한다.
+groups(id, name, invite_code, created_at), restaurants(id, group_id, name, category, price_level, walk_minutes, map_url, memo, created_by, created_at, deleted_at), draw_sessions(id, group_id, created_by, filters, status, redraw_used, decided_restaurant_id, created_at, closed_at), session_candidates(id, session_id, restaurant_id, round), votes(id, session_id, member_id, restaurant_id, updated_at), visits(id, group_id, restaurant_id, session_id, visited_on), reviews(id, visit_id, member_id, rating, comment, created_at)를 사용한다. users(id, login_id, password_hash, nickname, created_at), sessions(id, user_id, token, created_at, expires_at)도 사용하며, members(id, group_id, user_id, created_at)는 계정과 그룹의 소속 관계를 나타낸다. 수정, 삭제, 투표는 화면 순번이 아닌 고유 id로 처리한다. 모든 그룹 데이터의 조회와 변경은 로그인한 사용자가 멤버인 그룹 안에서만 허용한다. 시각은 UTC로 저장하고 화면에서 한국 시간으로 표시한다.
 
 ## 단계별 구현
-그룹·멤버 → 식당 관리 → 카드 뽑기 → 투표·결정 → 별점·기록 순서로 만든다. 각 단계는 DB, API, 화면을 모두 연결한 상태로 끝낸다. 무작위 추첨과 동점 처리는 항상 서버에서 하여 모든 멤버가 같은 결과를 본다.
+계정·그룹·멤버 → 식당 관리 → 카드 뽑기 → 투표·결정 → 별점·기록 순서로 만든다. 각 단계는 DB, API, 화면을 모두 연결한 상태로 끝낸다. 무작위 추첨과 동점 처리는 항상 서버에서 하여 모든 멤버가 같은 결과를 본다.
 
 ## 기술과 배포
 React(Vite), FastAPI, MariaDB, Nginx를 사용한다. 개발 서버는 한 대지만 프레젠테이션(React + Nginx), 애플리케이션(FastAPI), 데이터(MariaDB) 3티어로 나눈다. 계층 간 주소는 환경 변수로 주입해 나중에 서버를 분리할 수 있게 한다. 프론트엔드는 API로만 데이터를 요청하고, DB 접속 정보는 백엔드 .env에만 둔다. 화면 폭 768px을 기준으로 휴대폰은 1열, PC는 여러 열 레이아웃을 제공한다. Docker, Kubernetes, WebSocket은 추가하지 않는다.
 
 ## 제외 기능
-회원가입, 소셜 로그인, 지도 API 연동, 실시간 소켓 통신, 한 사람의 여러 그룹 소속, 푸시 알림, 자동 마감, 통계는 구현하지 않는다.
+소셜 로그인, 비밀번호 찾기·변경, 닉네임 변경, 그룹 탈퇴, 지도 API 연동, 실시간 소켓 통신, 푸시 알림, 자동 마감, 통계는 구현하지 않는다.
 
 ## 완료 기준
-그룹 생성, 초대 코드 입장, 중복 닉네임 거절, 빈 이름 식당 거절, 식당 삭제 취소가 가능하다. 조건에 맞는 식당이 0곳이면 뽑기가 거절된다. 3명이 휴대폰과 PC에서 투표하면 3초 안에 반영되고, 마감 결과가 모든 화면에서 같다. 뽑기를 만들지 않은 멤버의 마감 요청과 다른 그룹 데이터 접근은 거절된다. 같은 방문에 별점을 두 번 남기면 거절된다. 사용자 입력은 HTML 실행 없이 글자로 표시한다.
+회원가입, 중복 아이디·닉네임 거절, 로그인·로그아웃, 그룹 생성, 초대 코드 참여, 내 그룹 목록 표시, 빈 이름 식당 거절, 식당 삭제 취소가 가능하다. 조건에 맞는 식당이 0곳이면 뽑기가 거절된다. 3명이 휴대폰과 PC에서 투표하면 3초 안에 반영되고, 마감 결과가 모든 화면에서 같다. 뽑기를 만들지 않은 멤버의 마감 요청, 로그아웃한 토큰 사용, 내가 멤버가 아닌 그룹의 데이터 접근은 거절된다. 같은 방문에 별점을 두 번 남기면 거절된다. 사용자 입력은 HTML 실행 없이 글자로 표시한다.
