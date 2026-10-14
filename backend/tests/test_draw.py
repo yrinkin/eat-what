@@ -5,7 +5,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.services.draw import DrawFilters, NoCandidatesError, eligible, pick_candidates
+from datetime import UTC, date, datetime, timedelta, timezone
+
+from app.services.draw import DrawFilters, NoCandidatesError, decide, eligible, kst_date, pick_candidates
 
 
 def make(id, category="KOREAN", price_level=2, walk_minutes=5, deleted=False):
@@ -136,3 +138,47 @@ def test_filters_round_trip_dict():
     assert data == {"exclude_categories": ["ETC", "SNACK"], "max_price_level": 2, "max_walk_minutes": None}
     assert DrawFilters.from_dict(data) == filters
     assert DrawFilters.from_dict({}) == NO_FILTER
+
+
+# --- 마감 결정 (F11, T17) ---
+
+
+def test_decide_picks_most_voted():
+    assert decide([1, 2, 3], {1: 1, 2: 3, 3: 2}) == 2
+
+
+def test_decide_tie_picks_only_among_tied():
+    seen = set()
+    for seed in range(200):
+        seen.add(decide([1, 2, 3], {1: 2, 2: 2, 3: 1}, rng=random.Random(seed)))
+    assert seen == {1, 2}
+
+
+def test_decide_without_votes_picks_among_all_candidates():
+    seen = set()
+    for seed in range(200):
+        seen.add(decide([1, 2, 3], {}, rng=random.Random(seed)))
+    assert seen == {1, 2, 3}
+
+
+def test_decide_ignores_votes_for_non_candidates():
+    # 다시 뽑기 전 후보(9)에 남은 표는 세지 않는다.
+    assert decide([1, 2], {9: 5, 2: 1}) == 2
+
+
+def test_decide_single_candidate():
+    assert decide([7], {}) == 7
+
+
+def test_decide_requires_candidates():
+    with pytest.raises(ValueError):
+        decide([], {})
+
+
+def test_kst_date_crosses_midnight():
+    # UTC 14:59는 한국 23:59(같은 날), UTC 15:00은 한국 다음 날 00:00
+    assert kst_date(datetime(2026, 10, 14, 14, 59)) == date(2026, 10, 14)
+    assert kst_date(datetime(2026, 10, 14, 15, 0)) == date(2026, 10, 15)
+    assert kst_date(datetime(2026, 10, 14, 15, 0, tzinfo=UTC)) == date(2026, 10, 15)
+    other = timezone(timedelta(hours=-5))
+    assert kst_date(datetime(2026, 10, 14, 10, 0, tzinfo=other)) == date(2026, 10, 15)

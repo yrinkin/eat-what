@@ -1,15 +1,18 @@
-"""F07, F08: 카드 뽑기 추첨.
+"""F07, F08, F11: 카드 뽑기 추첨과 마감 결정.
 
 DB와 상관없이 식당 목록과 조건만으로 동작해서 pytest로 바로 검사할 수 있다.
 추첨은 항상 서버에서 하므로 모든 멤버가 같은 결과를 본다.
 """
 
 import random
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
+from datetime import UTC, date, datetime
+from zoneinfo import ZoneInfo
 from dataclasses import dataclass, field
 from typing import Protocol
 
 MAX_CANDIDATES = 3
+KST = ZoneInfo("Asia/Seoul")
 
 _system_random = random.SystemRandom()
 
@@ -95,3 +98,27 @@ def pick_candidates(
     if not pool:
         raise NoCandidatesError("조건에 맞는 식당이 없습니다.")
     return (rng or _system_random).sample(pool, min(k, len(pool)))
+
+
+def decide(
+    candidate_ids: Sequence[int],
+    vote_counts: Mapping[int, int],
+    rng: random.Random | None = None,
+) -> int:
+    """F11: 최다 득표 식당. 동점이면 동점 후보 중, 표가 없으면 전체 후보 중에서 무작위로 고른다.
+
+    후보가 아닌 식당의 표는 세지 않는다.
+    """
+    if not candidate_ids:
+        raise ValueError("후보가 없는 뽑기는 마감할 수 없습니다.")
+    counts = {rid: vote_counts.get(rid, 0) for rid in candidate_ids}
+    top = max(counts.values())
+    pool = sorted(rid for rid, count in counts.items() if count == top)
+    return (rng or _system_random).choice(pool)
+
+
+def kst_date(moment: datetime) -> date:
+    """UTC 시각(시간대 없으면 UTC로 본다)의 한국 날짜."""
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=UTC)
+    return moment.astimezone(KST).date()

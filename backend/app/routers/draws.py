@@ -6,15 +6,16 @@ from sqlalchemy.orm import Session
 
 from app.deps import get_current_member, get_db
 from app.errors import api_error
-from app.models import DrawSession, DrawStatus, Member, Restaurant, SessionCandidate, Vote
+from app.models import DrawSession, DrawStatus, Member, Restaurant, SessionCandidate, Visit, Vote
 from app.models.base import utc_now
 from app.schemas.common import MemberRef
 from app.schemas.draw import CandidateOut, CurrentDrawOut, DrawCreate, DrawFiltersOut, DrawOut, VoteIn
-from app.services.draw import DrawFilters, NoCandidatesError, pick_candidates
+from app.services.draw import DrawFilters, NoCandidatesError, decide, kst_date, pick_candidates
 
 router = APIRouter(prefix="/groups/{group_id}/draws", tags=["draws"])
 
 VOTE_RETRIES = 3
+CLOSE_RETRIES = 2
 # MariaDB: 1020 Record has changed since last read, 1213 Deadlock found
 RETRYABLE_DB_ERRORS = {1020, 1213}
 
@@ -45,6 +46,7 @@ def _draw_out(db: Session, draw: DrawSession, member: Member) -> DrawOut:
         ).all()
     )
     my_vote = db.scalar(select(Vote.restaurant_id).where(Vote.session_id == draw.id, Vote.member_id == member.id))
+    visit_id = db.scalar(select(Visit.id).where(Visit.session_id == draw.id))
     filters = DrawFilters.from_dict(draw.filters)
     return DrawOut(
         id=draw.id,
@@ -70,6 +72,7 @@ def _draw_out(db: Session, draw: DrawSession, member: Member) -> DrawOut:
         ],
         my_vote_restaurant_id=my_vote,
         decided_restaurant_id=draw.decided_restaurant_id,
+        visit_id=visit_id,
         created_at=draw.created_at,
         closed_at=draw.closed_at,
     )
@@ -157,11 +160,61 @@ def vote(
     return _draw_out(db, draw, member)
 
 
-def _get_draw(db: Session, draw_id: int, member: Member) -> DrawSession:
-    """내 그룹의 뽑기. 없거나 다른 그룹이면 404."""
-    draw = db.scalar(
-        select(DrawSession).where(DrawSession.id == draw_id, DrawSession.group_id == member.group_id)
+@router.post("/{draw_id}/close", response_model=DrawOut)
+def close_draw(draw_id: int, member: Member = Depends(get_current_member), db: Session = Depends(get_db)):
+    """F11: 뽑기를 만든 멤버만 마감한다. 서버가 결과를 정하고 한국 날짜로 방문 기록 1건을 만든다.
+
+    이미 마감된 뽑기는 결과를 바꾸지 않고 그대로 돌려준다.
+    """
+    for attempt in range(CLOSE_RETRIES):
+        try:
+            draw = _close_once(db, draw_id, member)
+            break
+        except OperationalError as exc:
+            db.rollback()
+            if exc.orig.args[0] not in RETRYABLE_DB_ERRORS or attempt == CLOSE_RETRIES - 1:
+                raise
+    db.refresh(draw)
+    return _draw_out(db, draw, member)
+
+
+def _close_once(db: Session, draw_id: int, member: Member) -> DrawSession:
+    # 인증하며 읽은 트랜잭션을 끝내고 새로 시작한다. 잠금을 얻은 뒤 최신 상태를 기준으로 읽어야
+    # 동시에 들어온 마감 요청이 MariaDB 1020(Record has changed since last read)으로 실패하지 않는다.
+    db.commit()
+    draw = _get_draw(db, draw_id, member, for_update=True)
+    if draw.created_by != member.id:
+        db.rollback()
+        raise api_error(403, "NOT_DRAW_CREATOR", "뽑기를 만든 사람만 마감할 수 있습니다.")
+    if draw.status != DrawStatus.OPEN:
+        db.rollback()  # 이미 마감됨: 잠금만 풀고 결과는 그대로
+        return draw
+
+    _, candidates = _current_candidates(draw)
+    vote_counts = dict(
+        db.execute(
+            select(Vote.restaurant_id, func.count()).where(Vote.session_id == draw.id).group_by(Vote.restaurant_id)
+        ).all()
     )
+    decided = decide([c.restaurant_id for c in candidates], vote_counts)
+    now = utc_now()
+    draw.status = DrawStatus.CLOSED
+    draw.decided_restaurant_id = decided
+    draw.closed_at = now
+    db.add(Visit(group_id=draw.group_id, restaurant_id=decided, session_id=draw.id, visited_on=kst_date(now)))
+    try:
+        db.commit()
+    except IntegrityError:
+        # 다른 요청이 먼저 방문 기록을 만든 경우: 그 결과를 그대로 돌려준다.
+        db.rollback()
+    return draw
+
+def _get_draw(db: Session, draw_id: int, member: Member, for_update: bool = False) -> DrawSession:
+    """내 그룹의 뽑기. 없거나 다른 그룹이면 404. for_update면 행을 잠가 마감 요청을 한 번에 하나씩 처리한다."""
+    query = select(DrawSession).where(DrawSession.id == draw_id, DrawSession.group_id == member.group_id)
+    if for_update:
+        query = query.with_for_update().execution_options(populate_existing=True)
+    draw = db.scalar(query)
     if draw is None:
         raise api_error(404, "DRAW_NOT_FOUND", "뽑기를 찾을 수 없습니다.")
     return draw
