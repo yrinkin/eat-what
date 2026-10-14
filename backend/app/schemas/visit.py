@@ -24,6 +24,12 @@ class ReviewOut(BaseModel):
     created_at: UtcDatetime
 
 
+class SkipOut(BaseModel):
+    visit_id: int
+    member: MemberRef
+    created_at: UtcDatetime
+
+
 class PendingRestaurant(BaseModel):
     id: int
     name: str

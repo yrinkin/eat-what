@@ -11,7 +11,7 @@ from app.models.base import utc_now
 from app.schemas.common import MemberRef
 from app.schemas.draw import CandidateOut, CurrentDrawOut, DrawCreate, DrawFiltersOut, DrawOut, VoteIn
 from app.services.draw import DrawFilters, NoCandidatesError, decide, kst_date, pick_candidates
-from app.services.stats import EMPTY, restaurant_stats
+from app.services.stats import EMPTY, real_visited_restaurant_ids, restaurant_stats
 
 router = APIRouter(prefix="/groups/{group_id}/draws", tags=["draws"])
 
@@ -97,9 +97,7 @@ def create_draw(body: DrawCreate, member: Member = Depends(get_current_member), 
     restaurants = db.scalars(
         select(Restaurant).where(Restaurant.group_id == member.group_id, Restaurant.deleted_at.is_(None))
     ).all()
-    visited_ids = db.scalars(
-        select(Visit.restaurant_id).where(Visit.group_id == member.group_id).distinct()
-    ).all()
+    visited_ids = real_visited_restaurant_ids(db, member.group_id)
     try:
         picked = pick_candidates(restaurants, filters, visited_ids=visited_ids)
     except NoCandidatesError:

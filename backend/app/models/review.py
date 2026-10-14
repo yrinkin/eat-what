@@ -24,3 +24,15 @@ class Review(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
     member: Mapped["Member"] = relationship()  # noqa: F821
+
+
+class VisitSkip(Base):
+    """F12: "안 갔어요" 응답. 방문마다 멤버당 1회이고, 별점과 함께 남길 수 없다."""
+
+    __tablename__ = "visit_skips"
+    __table_args__ = (UniqueConstraint("visit_id", "member_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    visit_id: Mapped[int] = mapped_column(ForeignKey("visits.id"))
+    member_id: Mapped[int] = mapped_column(ForeignKey("members.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)

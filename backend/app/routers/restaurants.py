@@ -16,7 +16,7 @@ from app.schemas.restaurant import (
     ReviewItem,
     VisitItem,
 )
-from app.services.stats import EMPTY, RestaurantStats, restaurant_stats
+from app.services.stats import EMPTY, IS_REAL_VISIT, RestaurantStats, restaurant_stats
 
 router = APIRouter(prefix="/groups/{group_id}/restaurants", tags=["restaurants"])
 
@@ -77,8 +77,10 @@ def list_restaurants(
     if category is not None:
         query = query.where(Restaurant.category == category)
     if visited is not None:
-        # 가 본 식당 = 그 그룹에 방문 기록이 1건 이상 있는 식당 (API-SPEC 정한 것 14)
-        has_visit = exists().where(Visit.restaurant_id == Restaurant.id, Visit.group_id == member.group_id)
+        # 가 본 식당 = 그 그룹에 실제 방문(별점 1개 이상)이 있는 식당 (API-SPEC 정한 것 14)
+        has_visit = exists().where(
+            Visit.restaurant_id == Restaurant.id, Visit.group_id == member.group_id, IS_REAL_VISIT
+        )
         query = query.where(has_visit if visited else ~has_visit)
     restaurants = db.scalars(query.order_by(Restaurant.name, Restaurant.id)).all()
     stats = restaurant_stats(db, [r.id for r in restaurants])
@@ -105,10 +107,12 @@ def read_restaurant(
     member: Member = Depends(get_current_member),
     db: Session = Depends(get_db),
 ):
-    """F13: 식당 상세. 평균 별점(소수 첫째 자리), 방문 이력(최근부터), 방문별 한 줄 평."""
+    """F13: 식당 상세. 평균 별점(소수 첫째 자리), 실제 방문 이력(최근부터), 방문별 한 줄 평."""
     restaurant = _get_active(db, restaurant_id, member)
     visits = db.scalars(
-        select(Visit).where(Visit.restaurant_id == restaurant.id).order_by(Visit.visited_on.desc(), Visit.id.desc())
+        select(Visit)
+        .where(Visit.restaurant_id == restaurant.id, IS_REAL_VISIT)
+        .order_by(Visit.visited_on.desc(), Visit.id.desc())
     ).all()
     reviews = db.scalars(
         select(Review).where(Review.visit_id.in_([v.id for v in visits])).order_by(Review.created_at, Review.id)

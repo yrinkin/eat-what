@@ -169,7 +169,11 @@ PC에서는 왼쪽에 그룹 목록을 둔 채 오른쪽에 그룹 화면을 보
   - 변경 파일: PRD.md(F06 가 본 곳 = 실제 방문, F12 갔어요/안 갔어요 1회 응답, F13 실제 방문 이력, 완료 기준), API-SPEC.md(ALREADY_RESPONDED, POST .../visits/{id}/skip, 실제 방문 규칙, 정한 것 14 수정·15·16 추가), PLAN.md(6-2장 T21D~T21F)
   - 확인 결과 (2026-10-14): 스크립트로 F01~F15 대응 통과(API 23개가 목록·상세에 모두 있음), skip API·ALREADY_RESPONDED·실제 방문 규칙 기재 확인.
   - 남은 오류: 없음
-- [ ] T21E: visit_skips 모델·마이그레이션과 POST /groups/{group_id}/visits/{id}/skip을 구현하고, 응답 대기 목록·가 본 곳(목록 visited, 뽑기 filters.visited)·최근 방문일·방문 이력을 실제 방문 기준으로 바꾼다. 확인: 안 갔어요 201 후 응답 대기 목록에서 빠짐, 안 갔어요 뒤 별점·별점 뒤 안 갔어요·안 갔어요 두 번은 409. 별점 없는 방문만 있는 식당은 가 본 곳·최근 방문일·방문 이력에 나오지 않고, 별점이 생기면 나온다. 결과가 같은 조건의 SQL과 같다.
+- [x] T21E: visit_skips 모델·마이그레이션과 POST /groups/{group_id}/visits/{id}/skip을 구현하고, 응답 대기 목록·가 본 곳(목록 visited, 뽑기 filters.visited)·최근 방문일·방문 이력을 실제 방문 기준으로 바꾼다. 확인: 안 갔어요 201 후 응답 대기 목록에서 빠짐, 안 갔어요 뒤 별점·별점 뒤 안 갔어요·안 갔어요 두 번은 409. 별점 없는 방문만 있는 식당은 가 본 곳·최근 방문일·방문 이력에 나오지 않고, 별점이 생기면 나온다. 결과가 같은 조건의 SQL과 같다.
+  - 변경 파일: backend/app/models/review.py(VisitSkip, (visit_id, member_id) UNIQUE), models/__init__.py, alembic/versions/fac770213e61_create_visit_skips.py, services/stats.py(IS_REAL_VISIT, real_visited_restaurant_ids, 최근 방문일은 실제 방문만), routers/visits.py(POST .../skip, 별점·안 갔어요를 방문 행 잠금으로 직렬화, 응답 대기는 별점·안 갔어요 모두 제외), routers/restaurants.py(목록 visited·상세 방문 이력은 실제 방문만), routers/draws.py(filters.visited는 실제 방문 기준), schemas/visit.py(SkipOut)
+  - 실행: alembic upgrade head, alembic check, 시험 스크립트(새 그룹 T21E 응답팀), 동시 응답 반복 시험, pytest
+  - 확인 결과 (2026-10-14): 27/27 통과. 응답 전 별점 없는 방문은 가 본 곳·최근 방문일·방문 이력에 없음. 안 갔어요 201 → 그 사람 응답 대기에서만 빠짐. 안 갔어요 두 번·안 갔어요 뒤 별점·별점 뒤 안 갔어요 409 ALREADY_RESPONDED, 별점 두 번 409 ALREADY_REVIEWED. 별점이 생기면 가 본 곳·최근 방문일·방문 이력 1건으로 나옴. 세 명 모두 안 갔어요면 끝까지 안 나옴. 뽑기 안 가 본 곳만에서 실제 방문 식당 제외·가 본 곳만은 그 식당만. 그룹 6개 모두 목록 visited 결과 수 = 실제 방문 기준 SQL. 같은 멤버 별점·안 갔어요 동시 10개 → 201 하나·DB 1건, 두 멤버 동시 16개 × 3회 → 멤버당 201 하나·DB 2건. 없는 방문·다른 그룹 경로·멤버 아님 404, 토큰 없음 401. 서버 오류 0건, pytest 30 passed.
+  - 남은 오류: 처음 구현은 잠그기 전에 만료된 member 값을 읽어 읽기 시점이 잠금보다 먼저 잡힐 수 있었음(동시 요청 때 별점과 안 갔어요가 둘 다 저장될 위험). 필요한 id를 commit 전에 꺼내도록 고친 뒤 시험함. 기존 시험 데이터 중 별점 없는 방문(T14 뽑기팀 8건 등)은 이제 가 본 곳에서 빠짐(새 규칙대로). 시험 중 만든 뽑기 7건의 방문 기록은 다음 회차에 영향이 없게 지움.
 - [ ] T21F: 별점 카드에 "안 갔어요" 버튼(확인 창 포함)을 넣는다. 확인: 안 갔어요를 누르고 확인하면 카드가 사라지고, 취소하면 그대로다. 그 식당이 목록의 가 본 곳에 나오지 않는다.
 
 ## 7장: 마무리와 시연 배포
