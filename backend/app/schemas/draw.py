@@ -19,6 +19,10 @@ class DrawCreate(BaseModel):
         return value
 
 
+class VoteIn(BaseModel):
+    restaurant_id: int
+
+
 class DrawFiltersOut(BaseModel):
     exclude_categories: list[Category]
     max_price_level: int | None
@@ -31,7 +35,7 @@ class CandidateOut(BaseModel):
     category: Category
     price_level: int
     walk_minutes: int | None
-    # 평균 별점은 T21, 득표 수는 T16에서 채운다.
+    # 평균 별점은 T21에서 채운다.
     avg_rating: float | None = None
     vote_count: int = 0
 

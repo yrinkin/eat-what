@@ -113,7 +113,11 @@ T07·T08의 "초대 코드 + 닉네임 입장"을 "회원가입·로그인 후 �
   - 남은 오류: 없음. 투표하기는 아직 안내만 표시(T16·T18에서 연결). 카드 공개 상태는 화면별이라 새로고침하면 다시 덮임. T08D 점심팀에 진행 중 뽑기가 남아 있음.
 
 ## 5장: 투표와 결정
-- [ ] T16: votes, visits 모델과 PUT /draws/{id}/vote를 구현한다 (F10). 확인: 같은 멤버가 다시 투표하면 표 수는 그대로이고 선택만 바뀐다. 후보가 아닌 식당은 422, 마감 후 투표는 409.
+- [x] T16: votes, visits 모델과 PUT /draws/{id}/vote를 구현한다 (F10). 확인: 같은 멤버가 다시 투표하면 표 수는 그대로이고 선택만 바뀐다. 후보가 아닌 식당은 422, 마감 후 투표는 409.
+  - 변경 파일: backend/app/models/vote.py(Vote: (session_id, member_id) UNIQUE, Visit: session_id UNIQUE), models/__init__.py, alembic/versions/1b3697f5aa41_create_votes_and_visits.py, schemas/draw.py(VoteIn), routers/draws.py(PUT .../draws/{id}/vote, 뽑기 객체에 vote_count·my_vote_restaurant_id)
+  - 실행: alembic upgrade head, alembic check, 시험 스크립트, 동시 투표 부하 시험
+  - 확인 결과 (2026-10-14): 20/20 통과. 같은 멤버가 다시 투표하면 총 표 수 1 그대로, 선택만 바뀌고 DB에 1행. 두 멤버가 보는 득표가 같고 current에도 반영. 후보가 아닌 식당·없는 id 422 NOT_A_CANDIDATE, 거절 후 득표 그대로. 마감 후 투표 409 DRAW_CLOSED(T14 소수팀 뽑기를 DB에서 CLOSED로 바꿔 재현)이고 저장되지 않음. 멤버 아님·다른 그룹 경로 404, 토큰 없음 401. 동시 투표 20개 → 모두 200, 멤버당 1행. 추가로 동시 40개 × 3회 모두 200, 득표 합계 2, 서버 오류 0건.
+  - 남은 오류: 처음 구현(읽고 고치기)은 같은 멤버 동시 투표 6개 중 3개가 500(MariaDB 11.8 오류 1020 Record has changed since last read, innodb_snapshot_isolation=ON). INSERT ... ON DUPLICATE KEY UPDATE 한 문장으로 바꾸고 1020·1213이면 최대 3번 다시 시도하도록 수정함.
 - [ ] T17: POST /draws/{id}/close를 구현한다 (F11). 확인: 생성자가 아니면 403. 동점과 무투표일 때도 후보 중 하나로 결정된다. 두 번 호출해도 visits는 1건이고, visited_on은 한국 날짜다.
 - [ ] T18: usePolling 훅, 득표 표시, 마감 버튼, 결과 화면을 구현한다. 확인: 브라우저 3개에서 투표하면 3초 안에 다른 화면에 반영된다. 마감 결과가 세 화면에서 같다. 탭을 비활성화하면 개발자 도구에서 요청이 멈춘다.
 

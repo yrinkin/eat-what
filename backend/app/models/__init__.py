@@ -4,6 +4,7 @@ from app.models.group import Group
 from app.models.member import Member
 from app.models.restaurant import Category, Restaurant
 from app.models.user import User, UserSession
+from app.models.vote import Visit, Vote
 
 __all__ = [
     "Category",
@@ -15,4 +16,6 @@ __all__ = [
     "SessionCandidate",
     "User",
     "UserSession",
+    "Visit",
+    "Vote",
 ]
