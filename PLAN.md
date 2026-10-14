@@ -40,7 +40,11 @@
   - 변경 파일: backend/app/main.py(라우터 등록), app/errors.py, app/deps.py(get_db, get_current_member), app/services/auth.py(초대 코드·토큰·해시), app/schemas/group.py, app/routers/groups.py
   - 확인 결과 (2026-10-14, curl로 같은 엔드포인트 호출): 그룹 생성 201(공백 제거, 6자리 코드), 소문자·공백 초대 코드로 입장 201, 두 토큰 각각 /me 200. 공백만 있는 그룹명 422, 그룹명 31자 422, 닉네임 21자 422, 앞뒤 공백 붙인 중복 닉네임 409, 없는 초대 코드 404, 토큰 없음 401(WWW-Authenticate: Bearer), 틀린 토큰 401. /docs 200, Bearer 인증 등록 확인. DB에는 토큰 원문 대신 SHA-256(64자)만 저장, created_at은 UTC.
   - 남은 오류: 없음. 시험 데이터(그룹 "T07 테스트팀", 멤버 민지·준호)가 DB에 남아 있음.
-- [ ] T08: 입장 화면을 만들고 토큰을 localStorage(lunch-token-v1)에 저장·복원한다. 확인: 일반 창과 시크릿 창에서 다른 닉네임으로 같은 그룹에 입장된다. 새로고침 후에도 유지되고, 토큰을 지우면 입장 화면으로 이동한다.
+- [x] T08: 입장 화면을 만들고 토큰을 localStorage(lunch-token-v1)에 저장·복원한다. 확인: 일반 창과 시크릿 창에서 다른 닉네임으로 같은 그룹에 입장된다. 새로고침 후에도 유지되고, 토큰을 지우면 입장 화면으로 이동한다.
+  - 변경 파일: frontend/src/token.js, api.js, pages/EntryPage.jsx, pages/HomePage.jsx, components/ServerStatus.jsx(T03 health 표시 이동), App.jsx, App.css
+  - 실행: npm run lint, npm run build, npm run dev -- --host 127.0.0.1 --port 5173
+  - 확인 결과 (2026-10-14): lint 경고 0건, build 성공. 5173 프록시로 입장 201, /me 200, 틀린 토큰 401. 브라우저(사용자 확인): 일반 창과 시크릿 창에서 다른 닉네임으로 같은 그룹 입장, 새로고침 후 홈 유지, lunch-token-v1 삭제 후 새로고침하면 입장 화면.
+  - 남은 오류: 없음. 같은 탭에서 토큰을 지우면 새로고침해야 반영됨(다른 탭은 storage 이벤트로 바로 반영).
 
 ## 3장: 식당 관리
 - [ ] T09: restaurants 모델·마이그레이션과 목록·등록·상세·수정·삭제 API를 구현한다 (F03~F05). 확인: 빈 이름과 잘못된 카테고리 422, 수정 시 미전달 필드 유지, 삭제 204. 삭제한 식당은 목록에서 빠지고 DB에는 deleted_at이 기록된 채 남는다. 다른 그룹의 식당은 404.

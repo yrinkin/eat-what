@@ -1,21 +1,130 @@
 .app {
-  max-width: 640px;
+  max-width: 480px;
+  min-height: 100vh;
   margin: 0 auto;
   padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 }
 
-.health dl {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 8px 16px;
+.app main {
+  flex: 1;
 }
 
-.health dt {
+h1 {
+  margin: 0 0 24px;
+  font-size: 1.75rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #d0d7de;
+}
+
+.tab {
+  flex: 1;
+  padding: 10px 8px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: inherit;
+  color: #656d76;
+  cursor: pointer;
+}
+
+.tab.active {
+  border-bottom-color: #0969da;
+  color: #1f2328;
   font-weight: 600;
 }
 
-.health dd {
+.entry-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.entry-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+}
+
+input {
+  padding: 10px 12px;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 400;
+}
+
+.code-input {
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+button {
+  padding: 10px 16px;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  background: #f6f8fa;
+  font: inherit;
+  cursor: pointer;
+}
+
+button.primary {
+  border-color: #0969da;
+  background: #0969da;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.greeting {
+  font-size: 1.125rem;
+}
+
+.group-info {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 16px;
+  padding: 16px;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+}
+
+.group-info dt {
+  font-weight: 600;
+}
+
+.group-info dd {
   margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.code {
+  font-family: ui-monospace, monospace;
+  font-size: 1.25rem;
+  letter-spacing: 0.15em;
+}
+
+.hint {
+  color: #656d76;
+  font-size: 0.875rem;
+}
+
+.server-status {
+  margin-top: 32px;
+  font-size: 0.75rem;
+  color: #656d76;
 }
 
 .ok {
