@@ -23,7 +23,12 @@
   - 변경 파일: API-SPEC.md (엔드포인트 17개, 공통 규칙, 오류 코드표, F01~F13 대응표, PRD에 없어 정한 것 9개)
   - 확인 결과 (2026-10-14): 스크립트로 F01~F13 각각 1개 이상의 API에 대응되고, 대응표의 API가 모두 엔드포인트 목록과 상세 설명에 있음을 확인. 401·403·404·409·422 모두 오류 항목에 기재.
   - 남은 오류: 없음. "PRD에 없어 정한 것" 9개는 사용자 검토 필요.
-- [ ] T05: Alembic을 초기화한다. 확인: alembic upgrade head가 오류 없이 실행되고 alembic_version 테이블이 생긴다.
+- [x] T05: Alembic을 초기화한다. 확인: alembic upgrade head가 오류 없이 실행되고 alembic_version 테이블이 생긴다.
+  - 변경 파일: backend/alembic.ini(접속 URL 줄 제거), backend/alembic/env.py(app.config.settings와 app.database.Base 사용), alembic/script.py.mako, alembic/README, alembic/versions/.gitkeep, backend/app/database.py(Base 추가), backend/requirements.txt(alembic==1.20.0)
+  - 실행: pip install alembic, alembic init alembic, alembic upgrade head
+  - 확인 결과 (2026-10-14): upgrade head exit 0. 실행 전 테이블 없음 → 실행 후 alembic_version 생성. health 200 유지. alembic 파일에서 비밀번호·계정·포트 검색 0건.
+  - 남은 오류: 없음. 리비전은 아직 없음(T06에서 첫 리비전 생성).
+  - API-SPEC.md의 "PRD에 없어 정한 것" 9개는 사용자 검토 후 확정함.
 
 ## 2장: 그룹과 멤버
 - [ ] T06: groups, members 모델과 마이그레이션을 만든다. 확인: SHOW CREATE TABLE로 invite_code UNIQUE, token UNIQUE, (group_id, nickname) UNIQUE를 확인한다.

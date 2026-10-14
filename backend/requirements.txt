@@ -8,3 +8,5 @@ SQLAlchemy==2.1.4
 PyMySQL==1.2.3
 # backend/.env 설정 읽기
 pydantic-settings==2.15.0
+# DB 마이그레이션 (테이블 생성·변경 이력 관리)
+alembic==1.20.0
