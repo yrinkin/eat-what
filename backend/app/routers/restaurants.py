@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.deps import get_current_member, get_db
 from app.errors import api_error
-from app.models import Member, Restaurant
+from app.models import Category, Member, Restaurant
 from app.models.base import utc_now
 from app.schemas.common import MemberRef
 from app.schemas.restaurant import (
@@ -47,13 +47,23 @@ def _get_active(db: Session, restaurant_id: int, member: Member) -> Restaurant:
 
 
 @router.get("", response_model=RestaurantList)
-def list_restaurants(member: Member = Depends(get_current_member), db: Session = Depends(get_db)):
-    """F06: 내 그룹의 삭제되지 않은 식당 목록 (이름순). 검색·필터는 T11에서 추가한다."""
-    restaurants = db.scalars(
-        select(Restaurant)
-        .where(Restaurant.group_id == member.group_id, Restaurant.deleted_at.is_(None))
-        .order_by(Restaurant.name, Restaurant.id)
-    ).all()
+def list_restaurants(
+    q: str | None = Query(None, max_length=50, description="이름에 포함된 글자"),
+    category: Category | None = Query(None),
+    member: Member = Depends(get_current_member),
+    db: Session = Depends(get_db),
+):
+    """F06: 그룹의 삭제되지 않은 식당 목록 (이름순). 이름 검색과 카테고리를 AND로 적용한다."""
+    query = select(Restaurant).where(
+        Restaurant.group_id == member.group_id, Restaurant.deleted_at.is_(None)
+    )
+    keyword = (q or "").strip()
+    if keyword:
+        # autoescape: 검색어의 %와 _를 와일드카드가 아닌 글자로 찾는다.
+        query = query.where(Restaurant.name.contains(keyword, autoescape=True))
+    if category is not None:
+        query = query.where(Restaurant.category == category)
+    restaurants = db.scalars(query.order_by(Restaurant.name, Restaurant.id)).all()
     return RestaurantList(items=[_to_out(r) for r in restaurants])
 
 

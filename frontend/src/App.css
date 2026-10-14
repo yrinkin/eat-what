@@ -226,3 +226,87 @@ button:disabled {
 .error {
   color: #cf222e;
 }
+
+h3 {
+  margin: 0 0 12px;
+  font-size: 1.125rem;
+}
+
+select {
+  padding: 10px 12px;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  background: #ffffff;
+  font: inherit;
+}
+
+.restaurants {
+  margin-top: 24px;
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+}
+
+.filters input {
+  flex: 1;
+}
+
+.result-count {
+  margin: 12px 0 8px;
+  color: #656d76;
+  font-size: 0.875rem;
+}
+
+.restaurant-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.restaurant-card {
+  padding: 12px 16px;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+}
+
+.restaurant-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.restaurant-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.badge {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #ddf4ff;
+  color: #0969da;
+  font-size: 0.75rem;
+}
+
+.restaurant-meta,
+.restaurant-memo,
+.restaurant-foot {
+  margin: 4px 0 0;
+  font-size: 0.875rem;
+}
+
+.restaurant-meta,
+.restaurant-foot {
+  color: #656d76;
+}
+
+.restaurant-memo {
+  overflow-wrap: anywhere;
+}
