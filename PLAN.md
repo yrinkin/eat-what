@@ -47,7 +47,11 @@
   - 남은 오류: 없음. 같은 탭에서 토큰을 지우면 새로고침해야 반영됨(다른 탭은 storage 이벤트로 바로 반영).
 
 ## 3장: 식당 관리
-- [ ] T09: restaurants 모델·마이그레이션과 목록·등록·상세·수정·삭제 API를 구현한다 (F03~F05). 확인: 빈 이름과 잘못된 카테고리 422, 수정 시 미전달 필드 유지, 삭제 204. 삭제한 식당은 목록에서 빠지고 DB에는 deleted_at이 기록된 채 남는다. 다른 그룹의 식당은 404.
+- [x] T09: restaurants 모델·마이그레이션과 목록·등록·상세·수정·삭제 API를 구현한다 (F03~F05). 확인: 빈 이름과 잘못된 카테고리 422, 수정 시 미전달 필드 유지, 삭제 204. 삭제한 식당은 목록에서 빠지고 DB에는 deleted_at이 기록된 채 남는다. 다른 그룹의 식당은 404.
+  - 변경 파일: backend/app/models/restaurant.py(Category ENUM, 가격대·도보 시간 CHECK), models/__init__.py, schemas/common.py(UTC Z 직렬화, MemberRef), schemas/restaurant.py, routers/restaurants.py, main.py, alembic/versions/349a1875b78f_create_restaurants.py
+  - 실행: alembic revision --autogenerate -m "create restaurants", alembic upgrade head, 시험 스크립트(urllib로 API 호출)
+  - 확인 결과 (2026-10-14): 30/30 통과. 빈 이름·51자 이름·잘못된/없는 카테고리·가격대 4·도보 61/-1·javascript: 링크·메모 201자 422. 수정 시 미전달 필드 유지, walk_minutes·map_url null로 지움, name null 422. 삭제 204 → 목록에서 빠지고 상세·재삭제 404, DB에 deleted_at 기록된 채 남음. 다른 그룹 GET/PATCH/DELETE 404, 다른 그룹 목록에 안 보임. HTML 태그 이름은 글자 그대로 저장.
+  - 남은 오류: 없음. 검색·필터(q, category)는 T11, avg_rating·review_count·last_visited_on·visits는 T16·T19·T21에서 채움(지금은 null/0/[]). 시험 데이터(그룹 "T09 A팀", "T09 B팀")가 DB에 남아 있음.
 - [ ] T10: 샘플 식당 15곳을 등록하는 backend/app/seed.py를 만든다. 확인: 실행 후 해당 그룹의 목록 API가 15곳을 반환한다.
 - [ ] T11: 식당 목록 화면과 이름 검색·카테고리 필터를 구현한다 (F06). 확인: 필터 결과 수가 같은 조건의 SQL 조회 결과와 같다. 다른 멤버가 등록한 식당도 보인다.
 - [ ] T12: 식당 등록·수정 폼과 삭제 확인을 구현한다. 확인: 삭제를 취소하면 항목이 유지된다. 필터를 건 상태에서 수정해도 다른 항목은 바뀌지 않는다. 이름에 HTML 태그를 넣어도 글자로 표시된다.
