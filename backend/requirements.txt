@@ -1,0 +1,10 @@
+# 웹 API 프레임워크
+fastapi==0.143.0
+# FastAPI 실행 서버
+uvicorn[standard]==0.54.0
+# DB 연결과 모델 (T05 Alembic에서도 사용)
+SQLAlchemy==2.1.4
+# MariaDB 드라이버
+PyMySQL==1.2.3
+# backend/.env 설정 읽기
+pydantic-settings==2.15.0
