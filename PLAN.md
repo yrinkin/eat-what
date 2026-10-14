@@ -57,7 +57,11 @@ T07·T08의 "초대 코드 + 닉네임 입장"을 "회원가입·로그인 후 �
   - 실행: alembic upgrade head, alembic check, alembic downgrade -1 → upgrade head
   - 확인 결과 (2026-10-14): 적용 전 groups 5·members 8·restaurants 32행 → 적용 후 모두 0행. SHOW CREATE TABLE로 uq_users_login_id, uq_users_nickname, uq_sessions_token, uq_members_group_id_user_id 확인, members에 token·nickname 없음. alembic check "No new upgrade operations detected"(모델과 DB 일치). 트랜잭션 시험(ROLLBACK)에서 중복 아이디·닉네임·세션 토큰·같은 그룹 재참여 모두 거절. downgrade/upgrade 왕복 정상. health 200.
   - 남은 오류: group_id 외래 키가 기존 (group_id, nickname) 인덱스를 쓰고 있어 새 UNIQUE를 먼저 만든 뒤 기존 인덱스를 지우도록 순서를 정함. 기존 /groups, /groups/join, /me, /restaurants API는 예전 members 구조를 써서 T08C·T08D 전까지 동작하지 않음.
-- [ ] T08C: POST /auth/signup, POST /auth/login, POST /auth/logout, GET /me를 구현한다 (F14, F15). 확인: 회원가입 201 후 토큰으로 /me 200. 중복 아이디·닉네임 409, 형식이 틀린 아이디와 7자 비밀번호 422. 틀린 비밀번호와 없는 아이디는 같은 401 응답. 로그아웃 204 후 같은 토큰으로 /me 401, 다른 기기 토큰은 유지. DB에 비밀번호 원문과 토큰 원문이 없다.
+- [x] T08C: POST /auth/signup, POST /auth/login, POST /auth/logout, GET /me를 구현한다 (F14, F15). 확인: 회원가입 201 후 토큰으로 /me 200. 중복 아이디·닉네임 409, 형식이 틀린 아이디와 7자 비밀번호 422. 틀린 비밀번호와 없는 아이디는 같은 401 응답. 로그아웃 204 후 같은 토큰으로 /me 401, 다른 기기 토큰은 유지. DB에 비밀번호 원문과 토큰 원문이 없다.
+  - 변경 파일: backend/app/services/auth.py(scrypt 비밀번호 해시, 세션 30일), schemas/auth.py, deps.py(get_current_session, get_current_user), routers/auth.py, main.py(auth 라우터 등록, 예전 groups 라우터 해제)
+  - 실행: 시험 스크립트(urllib로 API 호출), DB 조회
+  - 확인 결과 (2026-10-14): 22/22 통과. 회원가입 201(아이디 소문자·공백 제거) 후 /me 200. 중복 아이디(대문자로 입력해도)·중복 닉네임 409. 아이디 3자·21자·한글·특수문자, 비밀번호 7자·65자, 빈 닉네임 422. 틀린 비밀번호와 없는 아이디는 같은 401 INVALID_CREDENTIALS, 응답 시간 37ms/36ms. 로그아웃 204 후 같은 토큰 /me 401, 다른 로그인 토큰은 200 유지. DB에 비밀번호는 scrypt 해시만, 세션 토큰 원문 0건, 유효 기간 30일. 만료 시각을 과거로 바꾸면 /me 401.
+  - 남은 오류: 없음. 처음에 대문자 아이디가 422로 거절됨(StringConstraints의 to_lower가 pattern 검사 뒤에 적용됨) → 검사 전에 소문자로 바꾸도록 수정. 그룹·식당 API는 T08D 전까지 동작하지 않음.
 - [ ] T08D: GET/POST /groups, POST /groups/join, GET /groups/{group_id}를 구현하고, 식당 API를 /groups/{group_id}/restaurants로 옮긴다. seed.py는 계정 닉네임 기준으로 고친다 (F01, F02). 확인: 그룹 생성 후 다른 계정이 초대 코드로 참여하면 두 계정의 그룹 목록에 모두 나온다. 이미 참여한 그룹 409, 없는 초대 코드 404, 멤버가 아닌 그룹과 그 식당 404. T09의 식당 확인 항목을 새 경로로 다시 통과한다.
 - [ ] T08E: 회원가입·로그인 화면, 로그아웃 버튼, 내 그룹 목록 화면(그룹 만들기, 초대 코드로 참여, 그룹 선택)을 만든다. 확인: 일반 창과 시크릿 창에서 다른 계정으로 같은 그룹에 참여된다. 새로고침 후에도 로그인과 선택한 그룹이 유지된다. 로그아웃하면 로그인 화면으로 이동하고, 다시 로그인하면 그룹 목록이 그대로 있다.
 
