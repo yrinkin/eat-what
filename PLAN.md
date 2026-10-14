@@ -96,7 +96,11 @@ T07·T08의 "초대 코드 + 닉네임 입장"을 "회원가입·로그인 후 �
   - 남은 오류: 없음
 
 ## 4장: 카드 뽑기
-- [ ] T13: draw_sessions, session_candidates 모델과 services/draw.py 추첨 함수, pytest를 작성한다. 확인: 조건에 맞는 식당이 0곳이면 예외, 2곳이면 2개, 10곳이면 중복 없는 3개. 최대 도보 시간을 지정하면 도보 시간이 null인 식당은 제외된다.
+- [x] T13: draw_sessions, session_candidates 모델과 services/draw.py 추첨 함수, pytest를 작성한다. 확인: 조건에 맞는 식당이 0곳이면 예외, 2곳이면 2개, 10곳이면 중복 없는 3개. 최대 도보 시간을 지정하면 도보 시간이 null인 식당은 제외된다.
+  - 변경 파일: backend/app/models/draw.py(DrawSession, SessionCandidate, open_group_id 계산 컬럼 UNIQUE), models/__init__.py, alembic/versions/86cc431e097a_create_draw_sessions_and_candidates.py, app/services/draw.py(DrawFilters, matches, eligible, pick_candidates, NoCandidatesError), tests/test_draw.py, tests/__init__.py, pytest.ini, requirements.txt(pytest==9.1.1), .gitignore(.pytest_cache)
+  - 실행: alembic upgrade head, alembic check, backend 폴더에서 .venv/bin/python -m pytest -v
+  - 확인 결과 (2026-10-14): pytest 16 passed. 0곳이면 NoCandidatesError, 2곳이면 2개, 10곳이면 중복 없는 3개(시드 200개), 최대 도보 시간 지정 시 도보 시간 null 제외. 그 밖에 경계값(같은 값 포함), 조건 AND, 삭제 식당 제외, 직전 후보 제외, 모든 후보가 뽑힐 수 있음 확인. 버그를 일부러 넣으면(null 도보 미제외, 중복 허용 추첨) 각각 테스트 2개씩 실패하는 것 확인 후 원복. alembic check 일치. 트랜잭션 시험(ROLLBACK)에서 같은 그룹 두 번째 OPEN 뽑기 거절, 마감 후 새 OPEN 허용.
+  - 남은 오류: 없음
 - [ ] T14: POST /draws, GET /draws/current, GET /draws/{id}를 구현한다 (F07, F08). 확인: 0곳 조건 422, 진행 중인 뽑기가 있으면 409. 두 멤버가 조회한 후보가 같다.
 - [ ] T15: 뽑기 조건 화면과 DrawCard 뒤집기 컴포넌트를 구현한다. 확인: 카드를 누르면 뒤집히고, 모두 공개된 뒤에만 투표 버튼이 활성화된다. 0곳 조건에서는 안내 문구가 나온다.
 

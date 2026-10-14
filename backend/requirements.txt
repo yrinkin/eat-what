@@ -10,3 +10,5 @@ PyMySQL==1.2.3
 pydantic-settings==2.15.0
 # DB 마이그레이션 (테이블 생성·변경 이력 관리)
 alembic==1.20.0
+# 자동 테스트 (추첨 함수 등)
+pytest==9.1.1
