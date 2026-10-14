@@ -1,25 +1,40 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
 
-function GroupListPage({ onSelect }) {
+// 내 그룹 목록. 넓은 화면에서는 왼쪽에 늘 보이고, 좁은 화면에서는 그룹 화면과 번갈아 보인다.
+function GroupListPage({ selectedId, onSelect }) {
   const [groups, setGroups] = useState(null)
   const [loadError, setLoadError] = useState('')
   const [groupName, setGroupName] = useState('')
   const [inviteCode, setInviteCode] = useState('')
   const [formError, setFormError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
+    let cancelled = false
     api('/groups')
-      .then((data) => setGroups(data.items))
-      .catch((err) => setLoadError(err.message))
-  }, [])
+      .then((data) => {
+        if (cancelled) return
+        setLoadError('')
+        setGroups(data.items)
+      })
+      .catch((err) => {
+        if (!cancelled) setLoadError(err.message)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [reloadKey])
 
   async function submit(request) {
     setFormError('')
     setSubmitting(true)
     try {
       const group = await request()
+      setGroupName('')
+      setInviteCode('')
+      setReloadKey((n) => n + 1) // 새로 만들거나 참여한 그룹이 목록에 바로 보이게
       onSelect(group.id)
     } catch (err) {
       setFormError(err.message)
@@ -52,7 +67,12 @@ function GroupListPage({ onSelect }) {
         <ul className="cards">
           {groups.map((group) => (
             <li key={group.id}>
-              <button type="button" className="card-button" onClick={() => onSelect(group.id)}>
+              <button
+                type="button"
+                className={group.id === selectedId ? 'card-button selected' : 'card-button'}
+                aria-current={group.id === selectedId ? 'true' : undefined}
+                onClick={() => onSelect(group.id)}
+              >
                 <span className="card-title">{group.name}</span>
                 <span className="card-meta">멤버 {group.member_count}명</span>
               </button>

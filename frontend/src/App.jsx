@@ -113,10 +113,22 @@ function App() {
     content = <p>불러오는 중...</p>
   } else if (user === null) {
     content = <AuthPage onAuth={handleAuth} />
-  } else if (groupId === null) {
-    content = <GroupListPage onSelect={selectGroup} />
   } else {
-    content = <GroupPage key={groupId} groupId={groupId} onBack={backToList} />
+    // 넓은 화면: 왼쪽 그룹 목록 + 오른쪽 그룹 화면. 좁은 화면: 선택 여부에 따라 둘 중 하나만 보인다(CSS).
+    content = (
+      <div className={groupId === null ? 'workspace' : 'workspace has-selection'}>
+        <aside className="sidebar">
+          <GroupListPage selectedId={groupId} onSelect={selectGroup} />
+        </aside>
+        <div className="main-panel">
+          {groupId === null ? (
+            <p className="empty-panel">왼쪽에서 그룹을 골라 주세요.</p>
+          ) : (
+            <GroupPage key={groupId} groupId={groupId} onBack={backToList} />
+          )}
+        </div>
+      </div>
+    )
   }
 
   return (

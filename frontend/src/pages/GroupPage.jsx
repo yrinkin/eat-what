@@ -39,7 +39,8 @@ function GroupPage({ groupId, onBack }) {
 
   return (
     <section className="group">
-      <button type="button" className="link-button" onClick={onBack}>
+      {/* 좁은 화면에서만 보인다. 넓은 화면에서는 왼쪽에 그룹 목록이 늘 있다. */}
+      <button type="button" className="link-button narrow-only" onClick={onBack}>
         ← 내 그룹 목록
       </button>
       <h2>{group.name}</h2>
@@ -48,13 +49,16 @@ function GroupPage({ groupId, onBack }) {
         <dd className="code">{group.invite_code}</dd>
         <dt>멤버</dt>
         <dd>
-          <ul className="member-list">
-            {group.members.map((member) => (
-              <li key={member.id}>
-                {member.nickname}
-                {member.id === group.my_member_id && ' (나)'}
-              </li>
-            ))}
+          <ul className="member-chips">
+            {group.members.map((member) => {
+              const me = member.id === group.my_member_id
+              return (
+                <li key={member.id} className={me ? 'member-chip me' : 'member-chip'}>
+                  {member.nickname}
+                  {me && <span className="visually-hidden"> (나)</span>}
+                </li>
+              )
+            })}
           </ul>
         </dd>
       </dl>
