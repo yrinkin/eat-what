@@ -19,7 +19,10 @@
   - 실행: sudo apt install npm(사용자), npm install, npm run dev -- --host 127.0.0.1 --port 5173, npm run lint, npm run build
   - 확인 결과 (2026-10-14): 브라우저에 status ok, db ok 표시(사용자 확인). 5173 프록시 경유 health HTTP 200. node_modules 제외 frontend(dist 포함)에서 3306·lunch_app·DB_*·mysql·mariadb·실제 비밀번호 검색 0건. 빌드 결과에 백엔드 주소 0건. lint·build 오류 없음.
   - 남은 오류: 없음
-- [ ] T04: API-SPEC.md를 작성한다. 엔드포인트, 요청·응답 예시, 오류 코드(401, 403, 404, 409, 422)를 적는다. 확인: prd.md의 F01~F13이 모두 하나 이상의 API에 대응된다.
+- [x] T04: API-SPEC.md를 작성한다. 엔드포인트, 요청·응답 예시, 오류 코드(401, 403, 404, 409, 422)를 적는다. 확인: prd.md의 F01~F13이 모두 하나 이상의 API에 대응된다.
+  - 변경 파일: API-SPEC.md (엔드포인트 17개, 공통 규칙, 오류 코드표, F01~F13 대응표, PRD에 없어 정한 것 9개)
+  - 확인 결과 (2026-10-14): 스크립트로 F01~F13 각각 1개 이상의 API에 대응되고, 대응표의 API가 모두 엔드포인트 목록과 상세 설명에 있음을 확인. 401·403·404·409·422 모두 오류 항목에 기재.
+  - 남은 오류: 없음. "PRD에 없어 정한 것" 9개는 사용자 검토 필요.
 - [ ] T05: Alembic을 초기화한다. 확인: alembic upgrade head가 오류 없이 실행되고 alembic_version 테이블이 생긴다.
 
 ## 2장: 그룹과 멤버
