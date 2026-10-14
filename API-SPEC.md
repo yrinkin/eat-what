@@ -290,13 +290,14 @@ DB에 `SELECT 1`을 실행해 상태를 돌려준다.
 ### GET /groups/{group_id}/restaurants (F06)
 그룹의 삭제되지 않은 식당 목록이다. 이름 오름차순으로 정렬한다.
 
-쿼리 (둘 다 선택, 함께 주면 AND)
+쿼리 (모두 선택, 함께 주면 AND)
 | 이름 | 설명 |
 |---|---|
 | `q` | 이름에 이 글자가 포함된 식당 (공백 제거 후 비어 있으면 무시) |
 | `category` | 이 카테고리의 식당 |
+| `visited` | `true`: 가 본 식당만, `false`: 안 가 본 식당만. 생략하면 방문 여부 무시 |
 
-예: `GET /groups/{group_id}/restaurants?q=순대&category=KOREAN`
+예: `GET /groups/{group_id}/restaurants?q=순대&category=KOREAN&visited=false`
 
 응답 `200`
 ```json
@@ -380,7 +381,7 @@ DB에 `SELECT 1`을 실행해 상태를 돌려준다.
   "id": 5,
   "status": "OPEN",
   "created_by": { "id": 1, "nickname": "민지" },
-  "filters": { "exclude_categories": ["CHINESE"], "max_price_level": 2, "max_walk_minutes": 10 },
+  "filters": { "exclude_categories": ["CHINESE"], "max_price_level": 2, "max_walk_minutes": 10, "visited": false },
   "round": 1,
   "redraw_used": false,
   "candidates": [
@@ -405,7 +406,7 @@ DB에 `SELECT 1`을 실행해 상태를 돌려준다.
 
 요청
 ```json
-{ "exclude_categories": ["CHINESE"], "max_price_level": 2, "max_walk_minutes": 10 }
+{ "exclude_categories": ["CHINESE"], "max_price_level": 2, "max_walk_minutes": 10, "visited": false }
 ```
 
 | 필드 | 규칙 | 생략 또는 `null`일 때 |
@@ -413,6 +414,7 @@ DB에 `SELECT 1`을 실행해 상태를 돌려준다.
 | `exclude_categories` | 카테고리 목록, 중복 허용 안 함 | 제외 없음 (`[]`) |
 | `max_price_level` | 1~3 | 가격 조건 없음 |
 | `max_walk_minutes` | 0~60 정수. 지정하면 도보 시간이 `null`인 식당은 제외 | 거리 조건 없음 |
+| `visited` | `true`: 가 본 식당만, `false`: 안 가 본 식당만 | 방문 여부 조건 없음 |
 
 - 조건은 모두 AND로 적용하고, 삭제된 식당은 항상 제외한다.
 - 맞는 식당이 1~2곳이면 그만큼만 후보가 된다.
@@ -537,8 +539,8 @@ DB에 `SELECT 1`을 실행해 상태를 돌려준다.
 | F03 | 식당 등록·수정, 이름·카테고리 필수 | `POST /groups/{group_id}/restaurants`, `PATCH /groups/{group_id}/restaurants/{id}` |
 | F04 | 가격대·도보 시간·지도 링크·메모 규칙 | `POST /groups/{group_id}/restaurants`, `PATCH /groups/{group_id}/restaurants/{id}` |
 | F05 | 식당 삭제, 기록은 유지 | `DELETE /groups/{group_id}/restaurants/{id}` |
-| F06 | 이름 검색·카테고리 필터, 평균 별점·최근 방문일 | `GET /groups/{group_id}/restaurants` |
-| F07 | 뽑기 조건 (제외 카테고리, 최대 가격대, 최대 도보 시간) | `POST /groups/{group_id}/draws` |
+| F06 | 이름 검색·카테고리·방문 여부 필터, 평균 별점·최근 방문일 | `GET /groups/{group_id}/restaurants` |
+| F07 | 뽑기 조건 (제외 카테고리, 최대 가격대, 최대 도보 시간, 방문 여부) | `POST /groups/{group_id}/draws` |
 | F08 | 최대 3곳 무작위, 0곳 거절, 진행 중 1개 | `POST /groups/{group_id}/draws`, `GET /groups/{group_id}/draws/current`, `GET /groups/{group_id}/draws/{id}` |
 | F09 | 생성자 1회 다시 뽑기, 직전 후보 제외, 투표 초기화 | `POST /groups/{group_id}/draws/{id}/redraw` |
 | F10 | 1인 1표, 마감 전 변경, 3초 갱신 | `PUT /groups/{group_id}/draws/{id}/vote`, `GET /groups/{group_id}/draws/{id}` |
@@ -564,3 +566,4 @@ DB에 `SELECT 1`을 실행해 상태를 돌려준다.
 11. 회원가입하면 바로 로그인 상태가 된다(토큰 발급).
 12. 로그인할 때마다 새 세션을 만들어 여러 기기에서 동시에 로그인할 수 있고, 로그아웃은 현재 기기의 세션만 끝낸다.
 13. 그룹 안의 데이터는 `/groups/{group_id}/...` 경로로 구분한다. 헤더로 그룹을 고르는 방식보다 요청만 보고 어느 그룹인지 알 수 있다.
+14. "가 본 식당"은 그 그룹에 방문 기록(`visits`)이 1건 이상 있는 식당이다. 방문 기록은 뽑기를 마감할 때만 생기므로, 뽑기 없이 다녀온 곳은 "안 가 본 식당"으로 본다.
