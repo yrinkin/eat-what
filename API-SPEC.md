@@ -72,6 +72,7 @@ PRD.md의 F01~F15를 구현하는 HTTP API 계약이다. 구현 순서는 PLAN.m
 | `DRAW_CLOSED` | 409 | 마감된 뽑기에 투표·다시 뽑기 |
 | `REDRAW_ALREADY_USED` | 409 | 다시 뽑기를 이미 사용함 |
 | `ALREADY_REVIEWED` | 409 | 같은 방문에 이미 별점을 남김 |
+| `ALREADY_RESPONDED` | 409 | 같은 방문에 이미 응답함 (안 갔어요 뒤 별점, 별점 뒤 안 갔어요, 안 갔어요 두 번) |
 | `NO_CANDIDATES` | 422 | 조건에 맞는 식당이 0곳 |
 | `NOT_A_CANDIDATE` | 422 | 현재 후보가 아닌 식당에 투표 |
 
@@ -101,8 +102,9 @@ PRD.md의 F01~F15를 구현하는 HTTP API 계약이다. 구현 순서는 PLAN.m
 | POST | `/groups/{gid}/draws/{id}/redraw` | ✓ | 다시 뽑기 | F09 | T22 |
 | PUT | `/groups/{gid}/draws/{id}/vote` | ✓ | 투표 또는 표 변경 | F10 | T16 |
 | POST | `/groups/{gid}/draws/{id}/close` | ✓ | 마감과 결정 | F11 | T17 |
-| GET | `/groups/{gid}/visits/pending-review` | ✓ | 내가 아직 평가하지 않은 방문 | F12 | T19 |
-| POST | `/groups/{gid}/visits/{id}/reviews` | ✓ | 별점과 한 줄 평 등록 | F12 | T19 |
+| GET | `/groups/{gid}/visits/pending-review` | ✓ | 내가 아직 응답하지 않은 방문 | F12 | T19, T21E |
+| POST | `/groups/{gid}/visits/{id}/reviews` | ✓ | 별점과 한 줄 평 등록 (갔어요) | F12 | T19 |
+| POST | `/groups/{gid}/visits/{id}/skip` | ✓ | 안 갔어요 | F12 | T21E |
 
 ---
 
@@ -493,7 +495,7 @@ DB에 `SELECT 1`을 실행해 상태를 돌려준다.
 ## 방문과 별점
 
 ### GET /groups/{group_id}/visits/pending-review (F12)
-그룹의 방문 기록 중 내가 아직 별점을 남기지 않은 것이다. 최근 방문부터 정렬한다. 내가 그룹에 들어오기 전에 마감된 뽑기의 방문은 포함하지 않는다.
+그룹의 방문 기록 중 내가 아직 응답하지 않은(별점도 "안 갔어요"도 남기지 않은) 것이다. 최근 방문부터 정렬한다. 내가 그룹에 들어오기 전에 마감된 뽑기의 방문은 포함하지 않는다.
 
 응답 `200`
 ```json
@@ -505,8 +507,13 @@ DB에 `SELECT 1`을 실행해 상태를 돌려준다.
 ```
 - 식당이 삭제되어도 방문 기록은 남기 때문에 `deleted: true`로 표시한다.
 
+### 실제 방문
+- 별점이 1개 이상 있는 방문 기록만 **실제 방문**으로 본다.
+- 식당 객체의 `last_visited_on`, 식당 상세의 `visits`, 목록 쿼리 `visited`, 뽑기 `filters.visited`는 모두 실제 방문만 센다.
+- 마감 직후 아무도 응답하지 않은 방문과, 모두 "안 갔어요"라고 한 방문은 세지 않는다.
+
 ### POST /groups/{group_id}/visits/{id}/reviews (F12)
-방문 기록 하나에 멤버당 별점 1회를 남긴다.
+"갔어요" 응답이다. 방문 기록 하나에 멤버당 별점 1회를 남긴다.
 
 요청
 ```json
@@ -526,7 +533,22 @@ DB에 `SELECT 1`을 실행해 상태를 돌려준다.
 오류
 - `404 VISIT_NOT_FOUND` (없음 또는 다른 그룹)
 - `409 ALREADY_REVIEWED`: 같은 방문에 두 번째 별점
+- `409 ALREADY_RESPONDED`: 이미 "안 갔어요"라고 한 방문
 - `422`: 별점 0 또는 6, 정수가 아닌 별점, 101자 이상 한 줄 평
+
+### POST /groups/{group_id}/visits/{id}/skip (F12)
+"안 갔어요" 응답이다. 그 방문이 내 응답 대기 목록에서 빠진다.
+
+요청 본문 없음
+
+응답 `201`
+```json
+{ "visit_id": 31, "member": { "id": 2, "nickname": "준호" }, "created_at": "2026-10-14T05:10:00Z" }
+```
+
+오류
+- `404 VISIT_NOT_FOUND` (없음 또는 다른 그룹)
+- `409 ALREADY_RESPONDED`: 이미 별점을 남겼거나 "안 갔어요"라고 한 방문
 
 ---
 
@@ -545,7 +567,7 @@ DB에 `SELECT 1`을 실행해 상태를 돌려준다.
 | F09 | 생성자 1회 다시 뽑기, 직전 후보 제외, 투표 초기화 | `POST /groups/{group_id}/draws/{id}/redraw` |
 | F10 | 1인 1표, 마감 전 변경, 3초 갱신 | `PUT /groups/{group_id}/draws/{id}/vote`, `GET /groups/{group_id}/draws/{id}` |
 | F11 | 생성자만 마감, 최다 득표·동점·무투표 처리, 방문 기록 | `POST /groups/{group_id}/draws/{id}/close` |
-| F12 | 방문당 멤버별 별점 1회와 한 줄 평 | `GET /groups/{group_id}/visits/pending-review`, `POST /groups/{group_id}/visits/{id}/reviews` |
+| F12 | 방문당 멤버별 1회 응답: 별점과 한 줄 평(갔어요) 또는 안 갔어요 | `GET /groups/{group_id}/visits/pending-review`, `POST /groups/{group_id}/visits/{id}/reviews`, `POST /groups/{group_id}/visits/{id}/skip` |
 | F13 | 식당 상세: 평균 별점, 방문 이력, 한 줄 평 | `GET /groups/{group_id}/restaurants/{id}` |
 | F14 | 회원가입, 아이디·닉네임 중복 불가 | `POST /auth/signup` |
 | F15 | 로그인·로그아웃, 세션 토큰 30일 | `POST /auth/login`, `POST /auth/logout`, `GET /me` |
@@ -566,4 +588,6 @@ DB에 `SELECT 1`을 실행해 상태를 돌려준다.
 11. 회원가입하면 바로 로그인 상태가 된다(토큰 발급).
 12. 로그인할 때마다 새 세션을 만들어 여러 기기에서 동시에 로그인할 수 있고, 로그아웃은 현재 기기의 세션만 끝낸다.
 13. 그룹 안의 데이터는 `/groups/{group_id}/...` 경로로 구분한다. 헤더로 그룹을 고르는 방식보다 요청만 보고 어느 그룹인지 알 수 있다.
-14. "가 본 식당"은 그 그룹에 방문 기록(`visits`)이 1건 이상 있는 식당이다. 방문 기록은 뽑기를 마감할 때만 생기므로, 뽑기 없이 다녀온 곳은 "안 가 본 식당"으로 본다.
+14. "가 본 식당"은 그 그룹에 **실제 방문**(별점이 1개 이상 있는 방문 기록)이 1건 이상 있는 식당이다. 방문 기록은 뽑기를 마감할 때만 생기므로, 뽑기 없이 다녀온 곳은 "안 가 본 식당"으로 본다. (2026-10-14 수정: 투표만 하고 안 간 경우를 빼기 위해 "방문 기록 1건 이상"에서 바꿈)
+15. 마감 직후 아무도 응답하지 않은 방문은 실제 방문으로 세지 않는다. 응답하지 않는 멤버가 있어도 결과가 꼬이지 않게, "모두 안 갔어요라고 하기 전까지 갔다고 보기" 대신 "한 명이라도 별점을 남기면 갔다고 보기"를 택했다.
+16. 별점과 "안 갔어요"는 멤버당 방문마다 하나만 남길 수 있고 바꿀 수 없다.
