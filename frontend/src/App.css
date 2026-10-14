@@ -941,3 +941,10 @@ button.danger {
 .filters input {
   min-width: 140px;
 }
+
+.review-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}

@@ -8,7 +8,7 @@ function formatDate(isoDate) {
   return `${month}월 ${day}일`
 }
 
-// F12: 내가 아직 평가하지 않은 방문. 별점을 등록하면 목록에서 사라진다.
+// F12: 내가 아직 응답하지 않은 방문. 별점(갔어요)이나 "안 갔어요"를 남기면 목록에서 사라진다.
 // reloadKey가 바뀌면(뽑기 마감 등) 다시 불러온다.
 function PendingReviews({ groupId, reloadKey }) {
   const [items, setItems] = useState(null)
@@ -42,7 +42,7 @@ function PendingReviews({ groupId, reloadKey }) {
 
   return (
     <section className="pending-reviews">
-      <h3>별점을 남겨 주세요</h3>
+      <h3>다녀온 곳에 별점을 남겨 주세요</h3>
       {notice && (
         <p className="hint" role="status">
           {notice}
@@ -76,7 +76,23 @@ function ReviewCard({ groupId, item, onDone }) {
       })
       onDone(`'${name}'에 별점 ${rating}점을 남겼어요.`)
     } catch (err) {
-      if (err.code === 'ALREADY_REVIEWED') onDone(`'${name}'에는 이미 별점을 남겼어요.`)
+      if (err.code === 'ALREADY_REVIEWED' || err.code === 'ALREADY_RESPONDED') onDone(`'${name}'에는 이미 응답했어요.`)
+      else {
+        setError(err.message)
+        setSubmitting(false)
+      }
+    }
+  }
+
+  async function handleSkip() {
+    setError('')
+    if (!window.confirm(`'${name}'에 안 갔나요?\n안 갔어요를 고르면 이 방문에는 별점을 남길 수 없어요.`)) return
+    setSubmitting(true)
+    try {
+      await api(`/groups/${groupId}/visits/${item.visit_id}/skip`, { method: 'POST' })
+      onDone(`'${name}'은(는) 안 간 것으로 남겼어요.`)
+    } catch (err) {
+      if (err.code === 'ALREADY_RESPONDED') onDone(`'${name}'에는 이미 응답했어요.`)
       else {
         setError(err.message)
         setSubmitting(false)
@@ -119,7 +135,12 @@ function ReviewCard({ groupId, item, onDone }) {
           {submitting ? '등록 중...' : '등록'}
         </button>
       </div>
-      <p className="counter-line">{comment.length}/100</p>
+      <div className="review-foot">
+        <button type="button" className="small" onClick={handleSkip} disabled={submitting}>
+          안 갔어요
+        </button>
+        <span className="counter-line">{comment.length}/100</span>
+      </div>
       {error && (
         <p className="error" role="alert">
           {error}
