@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
 import DrawSection from '../components/DrawSection'
+import PendingReviews from '../components/PendingReviews'
 import RestaurantList from '../components/RestaurantList'
 
-// 그룹 첫 화면. 별점 등은 이후 작업에서 추가한다.
+// 그룹 첫 화면(홈): 평가 대기, 오늘의 뽑기, 식당 목록.
 function GroupPage({ groupId, onBack }) {
   const [group, setGroup] = useState(null)
   const [error, setError] = useState(null)
+  // 뽑기가 마감돼 새 방문 기록이 생기면 평가 대기 목록을 다시 불러온다.
+  const [visitsVersion, setVisitsVersion] = useState(0)
 
   useEffect(() => {
     api(`/groups/${groupId}`)
@@ -43,7 +46,12 @@ function GroupPage({ groupId, onBack }) {
         </dd>
       </dl>
       <p className="hint">팀원에게 초대 코드를 알려 주면 같은 그룹에 참여할 수 있어요.</p>
-      <DrawSection groupId={groupId} myMemberId={group.my_member_id} />
+      <PendingReviews groupId={groupId} reloadKey={visitsVersion} />
+      <DrawSection
+        groupId={groupId}
+        myMemberId={group.my_member_id}
+        onDecided={() => setVisitsVersion((n) => n + 1)}
+      />
       <RestaurantList groupId={groupId} />
     </section>
   )

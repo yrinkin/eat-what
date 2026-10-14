@@ -18,7 +18,7 @@ function formatKst(utcIso) {
 }
 
 // F07~F11: 조건 폼 → 뒤집힌 카드와 투표(3초 갱신) → 마감 결과.
-function DrawSection({ groupId, myMemberId }) {
+function DrawSection({ groupId, myMemberId, onDecided }) {
   const [draw, setDraw] = useState(undefined) // undefined: 불러오는 중, null: 진행 중인 뽑기 없음
   const [loadError, setLoadError] = useState('')
   const [actionError, setActionError] = useState('')
@@ -45,7 +45,10 @@ function DrawSection({ groupId, myMemberId }) {
         const { data, fresh } = await request(pollPath)
         if (!fresh) return
         setLoadError('')
-        setDraw(pollPath.endsWith('/current') ? data.draw : data)
+        const next = pollPath.endsWith('/current') ? data.draw : data
+        // 다른 멤버가 마감한 것을 갱신으로 알게 된 경우
+        if (next?.status === 'CLOSED') onDecided?.()
+        setDraw(next)
       } catch (err) {
         setLoadError(err.message)
       }
@@ -59,6 +62,7 @@ function DrawSection({ groupId, myMemberId }) {
     setBusy(true)
     try {
       const { data, fresh } = await request(path, options)
+      if (data?.status === 'CLOSED') onDecided?.()
       if (fresh) setDraw(data)
     } catch (err) {
       setActionError(err.message)
