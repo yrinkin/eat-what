@@ -2,5 +2,6 @@
 from app.models.group import Group
 from app.models.member import Member
 from app.models.restaurant import Category, Restaurant
+from app.models.user import User, UserSession
 
-__all__ = ["Category", "Group", "Member", "Restaurant"]
+__all__ = ["Category", "Group", "Member", "Restaurant", "User", "UserSession"]
