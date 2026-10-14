@@ -15,7 +15,7 @@ from app.schemas.restaurant import (
     RestaurantUpdate,
 )
 
-router = APIRouter(prefix="/restaurants", tags=["restaurants"])
+router = APIRouter(prefix="/groups/{group_id}/restaurants", tags=["restaurants"])
 
 
 def _to_out(restaurant: Restaurant, schema=RestaurantOut):

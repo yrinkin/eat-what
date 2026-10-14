@@ -13,7 +13,7 @@ import sys
 from sqlalchemy import select
 
 from app.database import SessionLocal
-from app.models import Group, Member, Restaurant
+from app.models import Group, Member, Restaurant, User
 from app.schemas.restaurant import RestaurantCreate
 
 SAMPLE_RESTAURANTS = [
@@ -44,7 +44,7 @@ def seed(invite_code: str, nickname: str | None = None) -> tuple[int, int]:
 
         member_query = select(Member).where(Member.group_id == group.id)
         if nickname:
-            member_query = member_query.where(Member.nickname == nickname.strip())
+            member_query = member_query.join(User).where(User.nickname == nickname.strip())
         member = db.scalar(member_query.order_by(Member.id))
         if member is None:
             raise SystemExit(f"그룹 {group.name!r}에서 등록자 멤버를 찾지 못했습니다.")
@@ -74,7 +74,7 @@ def seed(invite_code: str, nickname: str | None = None) -> tuple[int, int]:
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="샘플 식당 15곳을 그룹에 등록한다.")
     parser.add_argument("--invite-code", required=True, help="식당을 넣을 그룹의 초대 코드")
-    parser.add_argument("--nickname", help="등록자로 쓸 멤버 닉네임 (생략하면 그룹을 만든 멤버)")
+    parser.add_argument("--nickname", help="등록자로 쓸 멤버의 계정 닉네임 (생략하면 그룹을 만든 멤버)")
     args = parser.parse_args(argv)
     seed(args.invite_code, args.nickname)
 
