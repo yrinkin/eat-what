@@ -3,6 +3,7 @@ from app.models.draw import DrawSession, DrawStatus, SessionCandidate
 from app.models.group import Group
 from app.models.member import Member
 from app.models.restaurant import Category, Restaurant
+from app.models.review import Review
 from app.models.user import User, UserSession
 from app.models.vote import Visit, Vote
 
@@ -13,6 +14,7 @@ __all__ = [
     "Group",
     "Member",
     "Restaurant",
+    "Review",
     "SessionCandidate",
     "User",
     "UserSession",

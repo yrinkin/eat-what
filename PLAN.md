@@ -130,7 +130,11 @@ T07·T08의 "초대 코드 + 닉네임 입장"을 "회원가입·로그인 후 �
   - 남은 오류: 없음. 마감 후 새로고침하면 진행 중 뽑기가 없어 조건 폼이 보임(지난 결과는 그 화면을 보던 동안에만 표시).
 
 ## 6장: 별점과 기록
-- [ ] T19: reviews 모델과 GET /visits/pending-review, POST /visits/{id}/reviews를 구현한다 (F12). 확인: 별점 0과 6은 422, 101자 한 줄 평은 422, 같은 방문의 두 번째 별점은 409.
+- [x] T19: reviews 모델과 GET /visits/pending-review, POST /visits/{id}/reviews를 구현한다 (F12). 확인: 별점 0과 6은 422, 101자 한 줄 평은 422, 같은 방문의 두 번째 별점은 409.
+  - 변경 파일: backend/app/models/review.py((visit_id, member_id) UNIQUE, rating 1~5 CHECK), models/__init__.py, alembic/versions/d2b50c2b8717_create_reviews.py, schemas/visit.py(별점은 strict 정수), routers/visits.py(GET .../visits/pending-review, POST .../visits/{id}/reviews), main.py
+  - 실행: alembic upgrade head, alembic check, 시험 스크립트(중간에 스크립트의 시험 데이터 부족으로 멈춰 남은 항목을 이어서 실행), pytest
+  - 확인 결과 (2026-10-14): 29/29 통과. 별점 0·6 422, 101자 한 줄 평 422, 같은 방문 두 번째 별점 409 ALREADY_REVIEWED(값은 첫 번째 그대로). 그 밖에 -1, 4.5, 4.0, "4", 누락, null 422이고 저장 안 됨. 100자 한 줄 평 201, 앞뒤 공백 제거, 생략 시 빈 문자열. 다른 멤버는 같은 방문에 별점 가능. 별점 남긴 방문은 내 대기 목록에서만 빠짐, 최근 방문부터 정렬. 같은 멤버 동시 8개 → 201 하나·409 일곱·DB 1건. 멤버 아님·다른 그룹 경로·없는 방문 404, 토큰 없음 401. 나중에 참여한 멤버의 대기 목록에는 참여 전 방문 없음. 서버 오류 0건, pytest 23 passed.
+  - 남은 오류: 없음. T08D 점심팀의 방콕 키친 방문은 T20 화면 확인용으로 에이·비·씨 모두 대기 상태로 남겨 둠.
 - [ ] T20: 홈 화면의 평가 대기 카드와 별점 입력을 구현한다. 확인: 별점을 등록하면 평가 대기 목록에서 사라진다.
 - [ ] T21: 식당 상세 화면을 만들고 목록과 뽑기 카드에 평균 별점을 반영한다 (F13). 확인: 표시된 평균이 SQL AVG 결과를 소수 첫째 자리로 반올림한 값과 같다.
 

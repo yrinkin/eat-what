@@ -6,7 +6,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.database import engine
-from app.routers import auth, draws, groups, restaurants
+from app.routers import auth, draws, groups, restaurants, visits
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +15,7 @@ app.include_router(auth.router, prefix="/api/v1")
 app.include_router(groups.router, prefix="/api/v1")
 app.include_router(restaurants.router, prefix="/api/v1")
 app.include_router(draws.router, prefix="/api/v1")
+app.include_router(visits.router, prefix="/api/v1")
 
 
 @app.get("/api/v1/health")
