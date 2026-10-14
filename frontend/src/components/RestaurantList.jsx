@@ -118,7 +118,7 @@ function RestaurantList({ groupId, onOpen }) {
           {actionError}
         </p>
       )}
-      {!error && restaurants === null && <p>불러오는 중...</p>}
+      {!error && restaurants === null && <p className="loading">불러오는 중...</p>}
       {restaurants !== null && (
         <p className="result-count">
           {filtered ? '조건에 맞는 식당' : '전체'} {restaurants.length}곳

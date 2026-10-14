@@ -110,7 +110,7 @@ function App() {
       </div>
     )
   } else if (user === undefined) {
-    content = <p>불러오는 중...</p>
+    content = <p className="loading">불러오는 중...</p>
   } else if (user === null) {
     content = <AuthPage onAuth={handleAuth} />
   } else {

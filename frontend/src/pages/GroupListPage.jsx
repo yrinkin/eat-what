@@ -59,7 +59,7 @@ function GroupListPage({ selectedId, onSelect }) {
     <section className="group-list">
       <h2>내 그룹</h2>
       {loadError && <p className="error">{loadError}</p>}
-      {!loadError && groups === null && <p>불러오는 중...</p>}
+      {!loadError && groups === null && <p className="loading">불러오는 중...</p>}
       {groups?.length === 0 && (
         <p className="hint">아직 속한 그룹이 없어요. 그룹을 만들거나 초대 코드로 참여해 보세요.</p>
       )}

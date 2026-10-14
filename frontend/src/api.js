@@ -26,7 +26,7 @@ export async function api(path, { method = 'GET', body } = {}) {
       body: body === undefined ? undefined : JSON.stringify(body),
     })
   } catch {
-    throw new ApiError(0, 'NETWORK', '서버에 연결할 수 없습니다.')
+    throw new ApiError(0, 'NETWORK', '서버에 연결할 수 없어요. 인터넷 연결을 확인해 주세요.')
   }
 
   if (res.status === 204) return null
@@ -36,6 +36,10 @@ export async function api(path, { method = 'GET', body } = {}) {
   if (res.status === 401 && token) window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
 
   const detail = data?.detail
+  // API 서버가 꺼져 개발 서버 프록시나 Nginx가 JSON이 아닌 5xx를 돌려준 경우
+  if (res.status >= 500 && !detail) {
+    throw new ApiError(res.status, 'SERVER_DOWN', '서버에 연결할 수 없어요. 잠시 후 다시 시도해 주세요.')
+  }
   if (Array.isArray(detail)) {
     throw new ApiError(res.status, 'VALIDATION', '입력값을 확인해 주세요.')
   }

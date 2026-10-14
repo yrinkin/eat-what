@@ -39,7 +39,7 @@ function RestaurantDetail({ groupId, restaurantId, onBack }) {
         <p className="error">{error}</p>
       </section>
     )
-  if (!restaurant) return <p>불러오는 중...</p>
+  if (!restaurant) return <p className="loading">불러오는 중...</p>
 
   const r = restaurant
   return (

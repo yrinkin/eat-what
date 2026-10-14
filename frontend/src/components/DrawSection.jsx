@@ -85,7 +85,7 @@ function DrawSection({ groupId, myMemberId, onDecided }) {
     return (
       <section className="draw-section">
         <h3>오늘의 뽑기</h3>
-        {loadError ? <p className="error">{loadError}</p> : <p>불러오는 중...</p>}
+        {loadError ? <p className="error">{loadError}</p> : <p className="loading">불러오는 중...</p>}
       </section>
     )
   }

@@ -25,7 +25,7 @@ function GroupPage({ groupId, onBack }) {
   }, [groupId, onBack])
 
   if (error) return <p className="error">{error.message}</p>
-  if (!group) return <p>불러오는 중...</p>
+  if (!group) return <p className="loading">불러오는 중...</p>
 
   if (openRestaurantId !== null) {
     return (
