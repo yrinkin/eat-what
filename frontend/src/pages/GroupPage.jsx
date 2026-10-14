@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
+import DrawSection from '../components/DrawSection'
 import RestaurantList from '../components/RestaurantList'
 
-// 그룹 첫 화면. 뽑기, 별점 등은 이후 작업에서 추가한다.
+// 그룹 첫 화면. 투표, 별점 등은 이후 작업에서 추가한다.
 function GroupPage({ groupId, onBack }) {
   const [group, setGroup] = useState(null)
   const [error, setError] = useState(null)
@@ -42,6 +43,7 @@ function GroupPage({ groupId, onBack }) {
         </dd>
       </dl>
       <p className="hint">팀원에게 초대 코드를 알려 주면 같은 그룹에 참여할 수 있어요.</p>
+      <DrawSection groupId={groupId} />
       <RestaurantList groupId={groupId} />
     </section>
   )
