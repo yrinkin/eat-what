@@ -9,6 +9,9 @@ export class ApiError extends Error {
   }
 }
 
+// 토큰을 보낸 요청이 401이면 이 이벤트를 보내 App이 로그인 화면으로 돌아가게 한다.
+export const UNAUTHORIZED_EVENT = 'lunch:unauthorized'
+
 export async function api(path, { method = 'GET', body } = {}) {
   const headers = {}
   const token = getToken()
@@ -29,6 +32,8 @@ export async function api(path, { method = 'GET', body } = {}) {
   if (res.status === 204) return null
   const data = await res.json().catch(() => null)
   if (res.ok) return data
+
+  if (res.status === 401 && token) window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
 
   const detail = data?.detail
   if (Array.isArray(detail)) {
