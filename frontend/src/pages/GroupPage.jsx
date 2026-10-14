@@ -2,14 +2,17 @@ import { useEffect, useState } from 'react'
 import { api } from '../api'
 import DrawSection from '../components/DrawSection'
 import PendingReviews from '../components/PendingReviews'
+import RestaurantDetail from '../components/RestaurantDetail'
 import RestaurantList from '../components/RestaurantList'
 
-// 그룹 첫 화면(홈): 평가 대기, 오늘의 뽑기, 식당 목록.
+// 그룹 첫 화면(홈): 평가 대기, 오늘의 뽑기, 식당 목록. 식당 이름을 누르면 상세(F13).
 function GroupPage({ groupId, onBack }) {
   const [group, setGroup] = useState(null)
   const [error, setError] = useState(null)
   // 뽑기가 마감돼 새 방문 기록이 생기면 평가 대기 목록을 다시 불러온다.
   const [visitsVersion, setVisitsVersion] = useState(0)
+  // 식당 상세를 열면 그룹 홈 대신 상세를 보여 준다.
+  const [openRestaurantId, setOpenRestaurantId] = useState(null)
 
   useEffect(() => {
     api(`/groups/${groupId}`)
@@ -23,6 +26,16 @@ function GroupPage({ groupId, onBack }) {
 
   if (error) return <p className="error">{error.message}</p>
   if (!group) return <p>불러오는 중...</p>
+
+  if (openRestaurantId !== null) {
+    return (
+      <RestaurantDetail
+        groupId={groupId}
+        restaurantId={openRestaurantId}
+        onBack={() => setOpenRestaurantId(null)}
+      />
+    )
+  }
 
   return (
     <section className="group">
@@ -52,7 +65,7 @@ function GroupPage({ groupId, onBack }) {
         myMemberId={group.my_member_id}
         onDecided={() => setVisitsVersion((n) => n + 1)}
       />
-      <RestaurantList groupId={groupId} />
+      <RestaurantList groupId={groupId} onOpen={setOpenRestaurantId} />
     </section>
   )
 }

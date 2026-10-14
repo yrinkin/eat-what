@@ -11,6 +11,7 @@ from app.models.base import utc_now
 from app.schemas.common import MemberRef
 from app.schemas.draw import CandidateOut, CurrentDrawOut, DrawCreate, DrawFiltersOut, DrawOut, VoteIn
 from app.services.draw import DrawFilters, NoCandidatesError, decide, kst_date, pick_candidates
+from app.services.stats import EMPTY, restaurant_stats
 
 router = APIRouter(prefix="/groups/{group_id}/draws", tags=["draws"])
 
@@ -47,6 +48,7 @@ def _draw_out(db: Session, draw: DrawSession, member: Member) -> DrawOut:
     )
     my_vote = db.scalar(select(Vote.restaurant_id).where(Vote.session_id == draw.id, Vote.member_id == member.id))
     visit_id = db.scalar(select(Visit.id).where(Visit.session_id == draw.id))
+    stats = restaurant_stats(db, [c.restaurant_id for c in candidates])
     filters = DrawFilters.from_dict(draw.filters)
     return DrawOut(
         id=draw.id,
@@ -66,6 +68,7 @@ def _draw_out(db: Session, draw: DrawSession, member: Member) -> DrawOut:
                 category=c.restaurant.category,
                 price_level=c.restaurant.price_level,
                 walk_minutes=c.restaurant.walk_minutes,
+                avg_rating=stats.get(c.restaurant_id, EMPTY).avg_rating,
                 vote_count=vote_counts.get(c.restaurant_id, 0),
             )
             for c in candidates

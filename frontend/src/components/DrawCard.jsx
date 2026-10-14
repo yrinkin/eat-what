@@ -20,7 +20,7 @@ function DrawCard({ candidate, index, revealed, onReveal }) {
           <span className="draw-card-name">{candidate.name}</span>
           <span className="draw-card-meta">{PRICE_LABELS[candidate.price_level]}</span>
           <span className="draw-card-meta">{walkLabel(candidate.walk_minutes)}</span>
-          <span className="draw-card-meta">{ratingLabel(candidate.avg_rating, 0)}</span>
+          <span className="draw-card-meta">{ratingLabel(candidate.avg_rating)}</span>
         </span>
       </span>
     </button>

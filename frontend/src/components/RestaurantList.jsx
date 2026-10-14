@@ -7,7 +7,7 @@ const SEARCH_DELAY_MS = 300
 
 // F06: 식당 목록. 이름 검색과 카테고리 필터를 AND로 적용한다.
 // F03~F05: 등록·수정 폼과 삭제 확인. 수정·삭제는 화면 순번이 아니라 식당 id로 요청한다.
-function RestaurantList({ groupId }) {
+function RestaurantList({ groupId, onOpen }) {
   const [keyword, setKeyword] = useState('')
   const [category, setCategory] = useState('')
   const [restaurants, setRestaurants] = useState(null)
@@ -133,7 +133,9 @@ function RestaurantList({ groupId }) {
             ) : (
               <li key={r.id} className="restaurant-card">
                 <div className="restaurant-head">
-                  <span className="restaurant-name">{r.name}</span>
+                  <button type="button" className="link-button restaurant-name" onClick={() => onOpen(r.id)}>
+                    {r.name}
+                  </button>
                   <span className="badge">{CATEGORY_LABELS[r.category]}</span>
                 </div>
                 <p className="restaurant-meta">

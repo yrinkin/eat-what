@@ -68,7 +68,7 @@ class RestaurantOut(BaseModel):
     memo: str
     created_by: MemberRef
     created_at: UtcDatetime
-    # 아래 세 값은 방문·별점 기능(T16, T19, T21)에서 채운다.
+    # 방문·별점에서 계산한 값 (T21)
     avg_rating: float | None = None
     review_count: int = 0
     last_visited_on: date | None = None
@@ -78,6 +78,19 @@ class RestaurantList(BaseModel):
     items: list[RestaurantOut]
 
 
+class ReviewItem(BaseModel):
+    id: int
+    member: MemberRef
+    rating: int
+    comment: str
+    created_at: UtcDatetime
+
+
+class VisitItem(BaseModel):
+    id: int
+    visited_on: date
+    reviews: list[ReviewItem]
+
+
 class RestaurantDetail(RestaurantOut):
-    # 방문 이력은 T21에서 채운다.
-    visits: list = []
+    visits: list[VisitItem] = []

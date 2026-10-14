@@ -140,7 +140,11 @@ T07·T08의 "초대 코드 + 닉네임 입장"을 "회원가입·로그인 후 �
   - 실행: npm run lint, npm run build, DB 조회
   - 확인 결과 (2026-10-14): lint 경고 0건, build 성공. 브라우저(사용자 확인, T08D 점심팀): 방콕 키친 평가 카드가 보이고 별점을 등록하면 평가 대기 목록에서 사라짐. DB에 비 5점·에이 4점 저장 확인.
   - 남은 오류: 없음
-- [ ] T21: 식당 상세 화면을 만들고 목록과 뽑기 카드에 평균 별점을 반영한다 (F13). 확인: 표시된 평균이 SQL AVG 결과를 소수 첫째 자리로 반올림한 값과 같다.
+- [x] T21: 식당 상세 화면을 만들고 목록과 뽑기 카드에 평균 별점을 반영한다 (F13). 확인: 표시된 평균이 SQL AVG 결과를 소수 첫째 자리로 반올림한 값과 같다.
+  - 변경 파일: backend/app/services/stats.py(식당별 ROUND(AVG(rating),1)·별점 수·최근 방문일), routers/restaurants.py(목록·등록·수정·상세에 통계, 상세에 방문 이력·한 줄 평), schemas/restaurant.py(VisitItem, ReviewItem), routers/draws.py·schemas/draw.py(후보 avg_rating), frontend/src/components/RestaurantDetail.jsx(상세 화면), components/RestaurantList.jsx(이름 누르면 상세), components/DrawCard.jsx·labels.js(카드는 평균만, 목록·상세는 '(N명)'), pages/GroupPage.jsx, App.css
+  - 실행: 시험 스크립트(API 값과 SQL ROUND(AVG) 비교), npm run lint, npm run build, pytest
+  - 확인 결과 (2026-10-14): 모든 그룹 식당 49곳의 avg_rating·review_count·last_visited_on이 SQL과 같음. 반올림 경계 5·4·3·1(AVG 3.2500) → 3.3. 상세의 방문 이력·한 줄 평 4개(닉네임·별점·내용) 일치, 방문 없는 식당은 visits []·평균 null. 별점 있는 후보가 들어간 뽑기에서 후보 평균 샐러드 데이 3.5·방콕 키친 3.3 = SQL. 브라우저(사용자 확인): T08D 점심팀 방콕 키친 ★ 4.5 (2명), T14 뽑기팀 방콕 키친 ★ 3.3 (4명)·샐러드 데이 ★ 3.5 (2명)가 SQL 값과 같고, 이름을 누르면 상세(방문 이력·별점·한 줄 평), 그룹 홈으로 돌아가기 동작. 서버 오류 0건, pytest 23 passed, lint 0건, build 성공.
+  - 남은 오류: 없음. 시험 스크립트의 검사 2개가 제대로 검사하지 못해(항상 통과하는 식, 별점 없는 후보만 뽑힘) 별점 있는 후보로 다시 확인함. 시험 계정 t21_d(디) 추가, 시험용 뽑기 2건 마감.
 
 ## 7장: 마무리와 시연 배포
 - [ ] T22: 다시 뽑기를 구현한다 (F09). 확인: 직전 후보가 제외되고 기존 투표가 초기화된다. 두 번째 요청은 409, 생성자가 아니면 403.

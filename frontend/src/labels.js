@@ -19,8 +19,10 @@ export function walkLabel(minutes) {
   return minutes === null ? '도보 시간 미정' : `도보 ${minutes}분`
 }
 
+// 평균 별점(서버에서 소수 첫째 자리로 반올림한 값). count를 주면 별점 수도 붙인다.
 export function ratingLabel(avg, count) {
-  return avg === null ? '별점 없음' : `★ ${avg.toFixed(1)} (${count})`
+  if (avg === null) return '별점 없음'
+  return count === undefined ? `★ ${avg.toFixed(1)}` : `★ ${avg.toFixed(1)} (${count}명)`
 }
 
 export function visitLabel(date) {

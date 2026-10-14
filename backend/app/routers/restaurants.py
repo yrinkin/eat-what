@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.deps import get_current_member, get_db
 from app.errors import api_error
-from app.models import Category, Member, Restaurant
+from app.models import Category, Member, Restaurant, Review, Visit
 from app.models.base import utc_now
 from app.schemas.common import MemberRef
 from app.schemas.restaurant import (
@@ -13,12 +13,15 @@ from app.schemas.restaurant import (
     RestaurantList,
     RestaurantOut,
     RestaurantUpdate,
+    ReviewItem,
+    VisitItem,
 )
+from app.services.stats import EMPTY, RestaurantStats, restaurant_stats
 
 router = APIRouter(prefix="/groups/{group_id}/restaurants", tags=["restaurants"])
 
 
-def _to_out(restaurant: Restaurant, schema=RestaurantOut):
+def _to_out(restaurant: Restaurant, stats: RestaurantStats = EMPTY, schema=RestaurantOut, **extra):
     return schema(
         id=restaurant.id,
         name=restaurant.name,
@@ -29,7 +32,16 @@ def _to_out(restaurant: Restaurant, schema=RestaurantOut):
         memo=restaurant.memo,
         created_by=MemberRef(id=restaurant.creator.id, nickname=restaurant.creator.nickname),
         created_at=restaurant.created_at,
+        avg_rating=stats.avg_rating,
+        review_count=stats.review_count,
+        last_visited_on=stats.last_visited_on,
+        **extra,
     )
+
+
+def _with_stats(db: Session, restaurant: Restaurant, **kwargs):
+    stats = restaurant_stats(db, [restaurant.id]).get(restaurant.id, EMPTY)
+    return _to_out(restaurant, stats, **kwargs)
 
 
 def _get_active(db: Session, restaurant_id: int, member: Member) -> Restaurant:
@@ -64,7 +76,8 @@ def list_restaurants(
     if category is not None:
         query = query.where(Restaurant.category == category)
     restaurants = db.scalars(query.order_by(Restaurant.name, Restaurant.id)).all()
-    return RestaurantList(items=[_to_out(r) for r in restaurants])
+    stats = restaurant_stats(db, [r.id for r in restaurants])
+    return RestaurantList(items=[_to_out(r, stats.get(r.id, EMPTY)) for r in restaurants])
 
 
 @router.post("", status_code=201, response_model=RestaurantOut)
@@ -78,7 +91,7 @@ def create_restaurant(
     db.add(restaurant)
     db.commit()
     db.refresh(restaurant)
-    return _to_out(restaurant)
+    return _with_stats(db, restaurant)
 
 
 @router.get("/{restaurant_id}", response_model=RestaurantDetail)
@@ -87,8 +100,31 @@ def read_restaurant(
     member: Member = Depends(get_current_member),
     db: Session = Depends(get_db),
 ):
-    """F13: 식당 상세. 방문 이력과 한 줄 평은 T21에서 채운다."""
-    return _to_out(_get_active(db, restaurant_id, member), RestaurantDetail)
+    """F13: 식당 상세. 평균 별점(소수 첫째 자리), 방문 이력(최근부터), 방문별 한 줄 평."""
+    restaurant = _get_active(db, restaurant_id, member)
+    visits = db.scalars(
+        select(Visit).where(Visit.restaurant_id == restaurant.id).order_by(Visit.visited_on.desc(), Visit.id.desc())
+    ).all()
+    reviews = db.scalars(
+        select(Review).where(Review.visit_id.in_([v.id for v in visits])).order_by(Review.created_at, Review.id)
+    ).all() if visits else []
+    by_visit: dict[int, list[ReviewItem]] = {v.id: [] for v in visits}
+    for review in reviews:
+        by_visit[review.visit_id].append(
+            ReviewItem(
+                id=review.id,
+                member=MemberRef(id=review.member.id, nickname=review.member.nickname),
+                rating=review.rating,
+                comment=review.comment,
+                created_at=review.created_at,
+            )
+        )
+    return _with_stats(
+        db,
+        restaurant,
+        schema=RestaurantDetail,
+        visits=[VisitItem(id=v.id, visited_on=v.visited_on, reviews=by_visit[v.id]) for v in visits],
+    )
 
 
 @router.patch("/{restaurant_id}", response_model=RestaurantOut)
@@ -104,7 +140,7 @@ def update_restaurant(
         setattr(restaurant, field, value)
     db.commit()
     db.refresh(restaurant)
-    return _to_out(restaurant)
+    return _with_stats(db, restaurant)
 
 
 @router.delete("/{restaurant_id}", status_code=204)

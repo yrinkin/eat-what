@@ -766,3 +766,77 @@ button.danger {
   font-size: 0.75rem;
   text-align: right;
 }
+
+.restaurant-name.link-button {
+  padding: 0;
+  color: #1f2328;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: #d0d7de;
+  text-underline-offset: 3px;
+}
+
+.restaurant-name.link-button:hover {
+  color: #0969da;
+}
+
+.restaurant-detail h2 {
+  margin: 8px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.restaurant-detail h3 {
+  margin-top: 24px;
+}
+
+.detail-rating {
+  margin: 8px 0 0;
+  color: #9a6700;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.visit-list,
+.review-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.visit-item {
+  padding: 12px 0;
+  border-top: 1px solid #d0d7de;
+}
+
+.visit-date {
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+.review-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  padding: 4px 0;
+}
+
+.review-stars {
+  color: #d4a72c;
+  letter-spacing: 1px;
+}
+
+.review-stars .off {
+  color: #d0d7de;
+}
+
+.review-author {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.review-comment {
+  flex-basis: 100%;
+  overflow-wrap: anywhere;
+}
