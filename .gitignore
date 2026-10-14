@@ -1,0 +1,4 @@
+# 비밀 정보
+.env
+*.env
+!.env.example
