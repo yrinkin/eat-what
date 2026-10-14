@@ -1,0 +1,27 @@
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.health dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 16px;
+}
+
+.health dt {
+  font-weight: 600;
+}
+
+.health dd {
+  margin: 0;
+}
+
+.ok {
+  color: #1a7f37;
+}
+
+.error {
+  color: #cf222e;
+}

@@ -14,7 +14,11 @@
   - 실행: python3 -m venv .venv, pip install -r requirements.txt, python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
   - 확인 결과 (2026-10-14): curl → HTTP 200 {"status":"ok","db":"ok"}. sudo systemctl stop mariadb 후 HTTP 503 {"status":"error","db":"error"}, start 후 다시 200 (사용자 실행). 503 시 로그에 오류 종류만 남고 비밀번호는 없음.
   - 남은 오류: 없음. 8000 포트를 쓰던 flow-task 서버(별도 프로젝트)는 사용자 요청으로 종료함.
-- [ ] T03: frontend에 Vite + React 프로젝트를 만들고 /api 프록시를 설정한 뒤, 첫 화면에 health 결과를 표시한다. 확인: 브라우저에 db=ok가 표시된다. frontend 코드에서 DB 주소와 계정이 검색되지 않는다.
+- [x] T03: frontend에 Vite + React 프로젝트를 만들고 /api 프록시를 설정한 뒤, 첫 화면에 health 결과를 표시한다. 확인: 브라우저에 db=ok가 표시된다. frontend 코드에서 DB 주소와 계정이 검색되지 않는다.
+  - 변경 파일: frontend/ (create-vite 9.2.1 react 템플릿, Vite 8.3, React 19.2), vite.config.js(/api 프록시, 대상은 API_PROXY_TARGET 환경 변수), .env.example, src/App.jsx·App.css·index.css, index.html. 데모 이미지 삭제.
+  - 실행: sudo apt install npm(사용자), npm install, npm run dev -- --host 127.0.0.1 --port 5173, npm run lint, npm run build
+  - 확인 결과 (2026-10-14): 브라우저에 status ok, db ok 표시(사용자 확인). 5173 프록시 경유 health HTTP 200. node_modules 제외 frontend(dist 포함)에서 3306·lunch_app·DB_*·mysql·mariadb·실제 비밀번호 검색 0건. 빌드 결과에 백엔드 주소 0건. lint·build 오류 없음.
+  - 남은 오류: 없음
 - [ ] T04: API-SPEC.md를 작성한다. 엔드포인트, 요청·응답 예시, 오류 코드(401, 403, 404, 409, 422)를 적는다. 확인: prd.md의 F01~F13이 모두 하나 이상의 API에 대응된다.
 - [ ] T05: Alembic을 초기화한다. 확인: alembic upgrade head가 오류 없이 실행되고 alembic_version 테이블이 생긴다.
 
