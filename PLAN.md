@@ -52,7 +52,11 @@
   - 실행: alembic revision --autogenerate -m "create restaurants", alembic upgrade head, 시험 스크립트(urllib로 API 호출)
   - 확인 결과 (2026-10-14): 30/30 통과. 빈 이름·51자 이름·잘못된/없는 카테고리·가격대 4·도보 61/-1·javascript: 링크·메모 201자 422. 수정 시 미전달 필드 유지, walk_minutes·map_url null로 지움, name null 422. 삭제 204 → 목록에서 빠지고 상세·재삭제 404, DB에 deleted_at 기록된 채 남음. 다른 그룹 GET/PATCH/DELETE 404, 다른 그룹 목록에 안 보임. HTML 태그 이름은 글자 그대로 저장.
   - 남은 오류: 없음. 검색·필터(q, category)는 T11, avg_rating·review_count·last_visited_on·visits는 T16·T19·T21에서 채움(지금은 null/0/[]). 시험 데이터(그룹 "T09 A팀", "T09 B팀")가 DB에 남아 있음.
-- [ ] T10: 샘플 식당 15곳을 등록하는 backend/app/seed.py를 만든다. 확인: 실행 후 해당 그룹의 목록 API가 15곳을 반환한다.
+- [x] T10: 샘플 식당 15곳을 등록하는 backend/app/seed.py를 만든다. 확인: 실행 후 해당 그룹의 목록 API가 15곳을 반환한다.
+  - 변경 파일: backend/app/seed.py (초대 코드로 그룹 지정, 등록자는 첫 멤버 또는 --nickname, RestaurantCreate로 검증, 같은 이름은 건너뜀)
+  - 실행: backend 폴더에서 .venv/bin/python -m app.seed --invite-code <초대 코드> [--nickname <닉네임>]
+  - 확인 결과 (2026-10-14): 새 그룹 "T10 샘플팀"에 실행 → 15곳 등록, 목록 API 15곳(카테고리 7종 모두, 가격대 1·2·3, 도보 null 2곳). 소문자 코드로 다시 실행 → 0곳 등록·15곳 건너뜀, 목록 15곳 유지. 없는 초대 코드·없는 닉네임은 메시지와 함께 exit 1. 다른 그룹 식당 수 변화 없음.
+  - 남은 오류: 없음
 - [ ] T11: 식당 목록 화면과 이름 검색·카테고리 필터를 구현한다 (F06). 확인: 필터 결과 수가 같은 조건의 SQL 조회 결과와 같다. 다른 멤버가 등록한 식당도 보인다.
 - [ ] T12: 식당 등록·수정 폼과 삭제 확인을 구현한다. 확인: 삭제를 취소하면 항목이 유지된다. 필터를 건 상태에서 수정해도 다른 항목은 바뀌지 않는다. 이름에 HTML 태그를 넣어도 글자로 표시된다.
 
