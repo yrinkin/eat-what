@@ -36,7 +36,10 @@
   - 실행: alembic revision --autogenerate -m "create groups and members", alembic upgrade head
   - 확인 결과 (2026-10-14): SHOW CREATE TABLE에서 uq_groups_invite_code(invite_code), uq_members_token(token), uq_members_group_id_nickname(group_id, nickname), fk_members_group_id_groups 확인. 트랜잭션 시험(ROLLBACK)에서 같은 그룹 같은 닉네임·같은 토큰·없는 그룹은 거절, 다른 그룹 같은 닉네임은 허용. 시험 후 두 테이블 0행. downgrade base → upgrade head 왕복 정상.
   - 남은 오류: 없음. 참고로 utf8mb4_unicode_ci라 닉네임 비교는 대소문자를 구분하지 않음(Minji = minji).
-- [ ] T07: POST /groups, POST /groups/join, GET /me를 구현한다 (F01, F02). 확인: /docs에서 그룹 생성과 입장 후 토큰으로 /me 조회. 빈 그룹명 422, 중복 닉네임 409, 없는 초대 코드 404, 토큰 없음 401.
+- [x] T07: POST /groups, POST /groups/join, GET /me를 구현한다 (F01, F02). 확인: /docs에서 그룹 생성과 입장 후 토큰으로 /me 조회. 빈 그룹명 422, 중복 닉네임 409, 없는 초대 코드 404, 토큰 없음 401.
+  - 변경 파일: backend/app/main.py(라우터 등록), app/errors.py, app/deps.py(get_db, get_current_member), app/services/auth.py(초대 코드·토큰·해시), app/schemas/group.py, app/routers/groups.py
+  - 확인 결과 (2026-10-14, curl로 같은 엔드포인트 호출): 그룹 생성 201(공백 제거, 6자리 코드), 소문자·공백 초대 코드로 입장 201, 두 토큰 각각 /me 200. 공백만 있는 그룹명 422, 그룹명 31자 422, 닉네임 21자 422, 앞뒤 공백 붙인 중복 닉네임 409, 없는 초대 코드 404, 토큰 없음 401(WWW-Authenticate: Bearer), 틀린 토큰 401. /docs 200, Bearer 인증 등록 확인. DB에는 토큰 원문 대신 SHA-256(64자)만 저장, created_at은 UTC.
+  - 남은 오류: 없음. 시험 데이터(그룹 "T07 테스트팀", 멤버 민지·준호)가 DB에 남아 있음.
 - [ ] T08: 입장 화면을 만들고 토큰을 localStorage(lunch-token-v1)에 저장·복원한다. 확인: 일반 창과 시크릿 창에서 다른 닉네임으로 같은 그룹에 입장된다. 새로고침 후에도 유지되고, 토큰을 지우면 입장 화면으로 이동한다.
 
 ## 3장: 식당 관리

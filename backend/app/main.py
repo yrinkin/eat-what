@@ -6,10 +6,12 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.database import engine
+from app.routers import groups
 
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="오늘 뭐 먹지? API")
+app.include_router(groups.router, prefix="/api/v1")
 
 
 @app.get("/api/v1/health")
