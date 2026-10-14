@@ -310,3 +310,96 @@ select {
 .restaurant-memo {
   overflow-wrap: anywhere;
 }
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.section-head h3 {
+  margin: 0;
+}
+
+.restaurant-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid #0969da;
+  border-radius: 8px;
+  background: #f6f8fa;
+}
+
+.restaurant-card.editing {
+  padding: 0;
+  border: none;
+}
+
+.restaurant-card.editing .restaurant-form {
+  margin-bottom: 0;
+}
+
+.restaurant-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+textarea {
+  padding: 10px 12px;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 400;
+  resize: vertical;
+}
+
+.required {
+  color: #cf222e;
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.counter {
+  color: #656d76;
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.form-actions,
+.card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.card-actions {
+  margin-top: 8px;
+}
+
+button.small {
+  padding: 4px 12px;
+  font-size: 0.875rem;
+}
+
+button.danger {
+  color: #cf222e;
+}
+
+@media (max-width: 420px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
