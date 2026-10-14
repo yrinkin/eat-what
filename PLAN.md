@@ -157,7 +157,11 @@ PC에서는 왼쪽에 그룹 목록을 둔 채 오른쪽에 그룹 화면을 보
   - 실행: npm run lint, npm run build
   - 확인 결과 (2026-10-14): lint 경고 0건, build 성공. 브라우저(사용자 확인, t08d_b): 1280px에서 그룹을 바꿔도 왼쪽 목록이 그대로이고 선택한 그룹이 오른쪽에 표시. 360px에서는 목록과 그룹 화면을 오감. 멤버가 칩으로 보이고 본인 칩만 메인 색.
   - 남은 오류: 없음
-- [ ] T21C: 식당 목록 API에 visited 쿼리, 뽑기에 filters.visited를 추가하고 화면에 방문 여부 선택을 넣는다 (F06, F07). 확인: visited=true와 visited=false의 결과 수가 같은 조건의 SQL 결과와 같고 둘의 합이 전체와 같다. 안 가 본 곳만 뽑으면 방문 기록이 있는 식당이 후보에 없고, 0곳이면 422. 추첨 함수 pytest를 추가한다.
+- [x] T21C: 식당 목록 API에 visited 쿼리, 뽑기에 filters.visited를 추가하고 화면에 방문 여부 선택을 넣는다 (F06, F07). 확인: visited=true와 visited=false의 결과 수가 같은 조건의 SQL 결과와 같고 둘의 합이 전체와 같다. 안 가 본 곳만 뽑으면 방문 기록이 있는 식당이 후보에 없고, 0곳이면 422. 추첨 함수 pytest를 추가한다.
+  - 변경 파일: backend/app/services/draw.py(DrawFilters.visited, matches·eligible·pick_candidates에 visited_ids), schemas/draw.py(visited: StrictBool | None, DrawFiltersOut.visited), routers/draws.py(그룹 방문 식당 id를 추첨에 전달), routers/restaurants.py(목록 visited 쿼리, EXISTS), tests/test_draw.py(7개 추가), frontend/src/labels.js(VISITED_OPTIONS), components/RestaurantList.jsx(방문 여부 선택), components/DrawForm.jsx(방문 여부 칩), App.css
+  - 실행: pytest, 시험 스크립트(API 결과 수와 EXISTS 기반 SQL COUNT 비교, 뽑기 반복), npm run lint, npm run build
+  - 확인 결과 (2026-10-14): pytest 30 passed. 시험 20/20 통과: 그룹 4개 모두 visited=true·false 결과 수 = SQL이고 합 = 전체, 카테고리와 함께 6조합도 SQL과 같음, visited=abc 422. 안 가 본 곳만 8번 뽑기에서 방문 기록 있는 식당이 후보에 0번(후보 12곳), filters.visited=false 저장. 가 본 곳만 뽑기 후보는 모두 방문 식당. 방문 기록 없는 새 그룹에서 가 본 곳만 → 422 NO_CANDIDATES이고 저장 안 됨. visited "yes"·1·"true" 422. 서버 오류 0건. 브라우저(사용자 확인, T08D 점심팀): 목록 가 본 곳 1곳·안 가 본 곳 16곳, 뽑기 방문 여부 칩 동작.
+  - 남은 오류: 없음. 시험으로 T14 뽑기팀에 마감된 뽑기·방문 기록이 늘었고, 시험 그룹 "T21C 새팀"을 만듦.
 
 ## 7장: 마무리와 시연 배포
 - [ ] T22: 다시 뽑기를 구현한다 (F09). 확인: 직전 후보가 제외되고 기존 투표가 초기화된다. 두 번째 요청은 409, 생성자가 아니면 403.

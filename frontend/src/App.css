@@ -927,3 +927,17 @@ button.danger {
   color: #ffffff;
   font-weight: 600;
 }
+
+.chip.picked {
+  border-color: #0969da;
+  background: #0969da;
+  color: #ffffff;
+}
+
+.filters {
+  flex-wrap: wrap;
+}
+
+.filters input {
+  min-width: 140px;
+}

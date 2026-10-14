@@ -9,6 +9,13 @@ export const CATEGORY_LABELS = {
   ETC: '기타',
 }
 
+// 방문 여부 조건. 가 본 곳 = 그 그룹에서 뽑기로 정해 방문 기록이 있는 식당.
+export const VISITED_OPTIONS = [
+  { value: '', list: '방문 여부 전체', draw: '상관없음' },
+  { value: 'true', list: '가 본 곳', draw: '가 본 곳만' },
+  { value: 'false', list: '안 가 본 곳', draw: '안 가 본 곳만' },
+]
+
 export const PRICE_LABELS = {
   1: '1만 원 이하',
   2: '1~1.5만 원',

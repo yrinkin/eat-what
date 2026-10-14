@@ -36,6 +36,8 @@ class DrawFilters:
     exclude_categories: frozenset[str] = field(default_factory=frozenset)
     max_price_level: int | None = None
     max_walk_minutes: int | None = None
+    # True: 가 본 식당만, False: 안 가 본 식당만 (가 본 식당 = 그 그룹에 방문 기록이 있는 식당)
+    visited: bool | None = None
 
     @classmethod
     def from_dict(cls, data: dict) -> "DrawFilters":
@@ -43,6 +45,7 @@ class DrawFilters:
             exclude_categories=frozenset(str(c) for c in data.get("exclude_categories") or []),
             max_price_level=data.get("max_price_level"),
             max_walk_minutes=data.get("max_walk_minutes"),
+            visited=data.get("visited"),  # 이 조건이 생기기 전에 저장된 뽑기는 None
         )
 
     def to_dict(self) -> dict:
@@ -50,6 +53,7 @@ class DrawFilters:
             "exclude_categories": sorted(self.exclude_categories),
             "max_price_level": self.max_price_level,
             "max_walk_minutes": self.max_walk_minutes,
+            "visited": self.visited,
         }
 
 
@@ -58,8 +62,11 @@ def _category_value(category) -> str:
     return getattr(category, "value", category)
 
 
-def matches(restaurant: RestaurantLike, filters: DrawFilters) -> bool:
-    """F07: 모든 조건을 AND로 적용한다. 삭제된 식당은 항상 제외한다."""
+def matches(restaurant: RestaurantLike, filters: DrawFilters, visited_ids: frozenset[int] = frozenset()) -> bool:
+    """F07: 모든 조건을 AND로 적용한다. 삭제된 식당은 항상 제외한다.
+
+    visited_ids는 그 그룹에 방문 기록이 있는 식당 id다 (filters.visited를 쓸 때 필요).
+    """
     if restaurant.deleted_at is not None:
         return False
     if _category_value(restaurant.category) in filters.exclude_categories:
@@ -70,6 +77,8 @@ def matches(restaurant: RestaurantLike, filters: DrawFilters) -> bool:
         # 최대 도보 시간을 지정하면 도보 시간이 정해지지 않은 식당은 뺀다.
         if restaurant.walk_minutes is None or restaurant.walk_minutes > filters.max_walk_minutes:
             return False
+    if filters.visited is not None and (restaurant.id in visited_ids) != filters.visited:
+        return False
     return True
 
 
@@ -77,10 +86,12 @@ def eligible(
     restaurants: Iterable[RestaurantLike],
     filters: DrawFilters,
     exclude_ids: Iterable[int] = (),
+    visited_ids: Iterable[int] = (),
 ) -> list[RestaurantLike]:
     """조건에 맞는 식당. exclude_ids는 다시 뽑기(F09)에서 직전 후보를 빼는 데 쓴다."""
     excluded = set(exclude_ids)
-    return [r for r in restaurants if r.id not in excluded and matches(r, filters)]
+    visited = frozenset(visited_ids)
+    return [r for r in restaurants if r.id not in excluded and matches(r, filters, visited)]
 
 
 def pick_candidates(
@@ -89,12 +100,13 @@ def pick_candidates(
     exclude_ids: Iterable[int] = (),
     k: int = MAX_CANDIDATES,
     rng: random.Random | None = None,
+    visited_ids: Iterable[int] = (),
 ) -> list[RestaurantLike]:
     """F08: 조건에 맞는 식당 중 최대 k곳을 중복 없이 무작위로 고른다.
 
     0곳이면 NoCandidatesError, 1~2곳이면 있는 만큼만 돌려준다.
     """
-    pool: Sequence[RestaurantLike] = eligible(restaurants, filters, exclude_ids)
+    pool: Sequence[RestaurantLike] = eligible(restaurants, filters, exclude_ids, visited_ids)
     if not pool:
         raise NoCandidatesError("조건에 맞는 식당이 없습니다.")
     return (rng or _system_random).sample(pool, min(k, len(pool)))

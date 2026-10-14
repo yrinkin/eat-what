@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { api } from '../api'
-import { CATEGORY_LABELS, PRICE_LABELS } from '../labels'
+import { CATEGORY_LABELS, PRICE_LABELS, VISITED_OPTIONS } from '../labels'
 
 const WALK_OPTIONS = [5, 10, 15, 20, 30]
 
@@ -9,6 +9,7 @@ function DrawForm({ groupId, onDrawn, onConflict }) {
   const [excluded, setExcluded] = useState([])
   const [maxPrice, setMaxPrice] = useState('')
   const [maxWalk, setMaxWalk] = useState('')
+  const [visited, setVisited] = useState('')
   const [error, setError] = useState('')
   const [noCandidates, setNoCandidates] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -25,6 +26,7 @@ function DrawForm({ groupId, onDrawn, onConflict }) {
     const body = { exclude_categories: excluded }
     if (maxPrice) body.max_price_level = Number(maxPrice)
     if (maxWalk) body.max_walk_minutes = Number(maxWalk)
+    if (visited) body.visited = visited === 'true'
 
     setSubmitting(true)
     try {
@@ -47,6 +49,26 @@ function DrawForm({ groupId, onDrawn, onConflict }) {
             <label key={value} className={excluded.includes(value) ? 'chip selected' : 'chip'}>
               <input type="checkbox" checked={excluded.includes(value)} onChange={() => toggleCategory(value)} />
               {label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>방문 여부</legend>
+        <div className="chips">
+          {VISITED_OPTIONS.map((option) => (
+            <label key={option.value} className={visited === option.value ? 'chip picked' : 'chip'}>
+              <input
+                type="radio"
+                name="draw-visited"
+                value={option.value}
+                checked={visited === option.value}
+                onChange={() => {
+                  setNoCandidates(false)
+                  setVisited(option.value)
+                }}
+              />
+              {option.draw}
             </label>
           ))}
         </div>
@@ -92,7 +114,7 @@ function DrawForm({ groupId, onDrawn, onConflict }) {
       {noCandidates && (
         <div className="notice" role="alert">
           <strong>조건에 맞는 식당이 없어요.</strong>
-          <span>빼는 카테고리를 줄이거나 가격대·도보 시간을 "상관없음"으로 바꿔 보세요.</span>
+          <span>빼는 카테고리를 줄이거나 가격대·도보 시간·방문 여부를 "상관없음"으로 바꿔 보세요.</span>
         </div>
       )}
       {error && (

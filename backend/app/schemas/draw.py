@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, StrictBool, field_validator
 
 from app.models import Category, DrawStatus
 from app.schemas.common import MemberRef, UtcDatetime
@@ -10,6 +10,8 @@ class DrawCreate(BaseModel):
     exclude_categories: list[Category] = []
     max_price_level: Annotated[int, Field(ge=1, le=3)] | None = None
     max_walk_minutes: Annotated[int, Field(ge=0, le=60)] | None = None
+    # True: 가 본 곳만, False: 안 가 본 곳만, None: 상관없음
+    visited: StrictBool | None = None
 
     @field_validator("exclude_categories")
     @classmethod
@@ -27,6 +29,7 @@ class DrawFiltersOut(BaseModel):
     exclude_categories: list[Category]
     max_price_level: int | None
     max_walk_minutes: int | None
+    visited: bool | None
 
 
 class CandidateOut(BaseModel):

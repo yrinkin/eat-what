@@ -135,7 +135,12 @@ def test_default_rng_is_used_without_seed():
 def test_filters_round_trip_dict():
     filters = DrawFilters(exclude_categories=frozenset({"SNACK", "ETC"}), max_price_level=2, max_walk_minutes=None)
     data = filters.to_dict()
-    assert data == {"exclude_categories": ["ETC", "SNACK"], "max_price_level": 2, "max_walk_minutes": None}
+    assert data == {
+        "exclude_categories": ["ETC", "SNACK"],
+        "max_price_level": 2,
+        "max_walk_minutes": None,
+        "visited": None,
+    }
     assert DrawFilters.from_dict(data) == filters
     assert DrawFilters.from_dict({}) == NO_FILTER
 
@@ -182,3 +187,44 @@ def test_kst_date_crosses_midnight():
     assert kst_date(datetime(2026, 10, 14, 15, 0, tzinfo=UTC)) == date(2026, 10, 15)
     other = timezone(timedelta(hours=-5))
     assert kst_date(datetime(2026, 10, 14, 10, 0, tzinfo=other)) == date(2026, 10, 15)
+
+
+# --- 방문 여부 조건 (F07, T21C) ---
+
+
+def test_unvisited_only_excludes_visited():
+    restaurants = [make(1), make(2), make(3)]
+    assert ids(eligible(restaurants, DrawFilters(visited=False), visited_ids={2})) == [1, 3]
+
+
+def test_visited_only_keeps_visited():
+    restaurants = [make(1), make(2), make(3)]
+    assert ids(eligible(restaurants, DrawFilters(visited=True), visited_ids={2, 3})) == [2, 3]
+
+
+def test_visited_not_specified_is_ignored():
+    restaurants = [make(1), make(2)]
+    assert ids(eligible(restaurants, NO_FILTER, visited_ids={1})) == [1, 2]
+
+
+def test_visited_only_with_no_visits_raises():
+    with pytest.raises(NoCandidatesError):
+        pick_candidates([make(1), make(2)], DrawFilters(visited=True), visited_ids=())
+
+
+def test_unvisited_draw_never_picks_visited():
+    restaurants = [make(i) for i in range(1, 11)]
+    visited = {1, 2, 3, 4, 5, 6, 7}
+    for seed in range(200):
+        picked = pick_candidates(restaurants, DrawFilters(visited=False), rng=random.Random(seed), visited_ids=visited)
+        assert set(ids(picked)) <= {8, 9, 10}
+
+
+def test_visited_combines_with_other_conditions():
+    restaurants = [make(1, category="CHINESE"), make(2, price_level=3), make(3), make(4)]
+    filters = DrawFilters(exclude_categories=frozenset({"CHINESE"}), max_price_level=2, visited=False)
+    assert ids(eligible(restaurants, filters, visited_ids={4})) == [3]
+
+
+def test_old_filters_without_visited_still_load():
+    assert DrawFilters.from_dict({"exclude_categories": [], "max_price_level": None, "max_walk_minutes": 10}).visited is None

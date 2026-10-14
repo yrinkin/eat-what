@@ -58,6 +58,7 @@ def _draw_out(db: Session, draw: DrawSession, member: Member) -> DrawOut:
             exclude_categories=sorted(filters.exclude_categories),
             max_price_level=filters.max_price_level,
             max_walk_minutes=filters.max_walk_minutes,
+            visited=filters.visited,
         ),
         round=current_round,
         redraw_used=draw.redraw_used,
@@ -91,12 +92,16 @@ def create_draw(body: DrawCreate, member: Member = Depends(get_current_member), 
         exclude_categories=frozenset(c.value for c in body.exclude_categories),
         max_price_level=body.max_price_level,
         max_walk_minutes=body.max_walk_minutes,
+        visited=body.visited,
     )
     restaurants = db.scalars(
         select(Restaurant).where(Restaurant.group_id == member.group_id, Restaurant.deleted_at.is_(None))
     ).all()
+    visited_ids = db.scalars(
+        select(Visit.restaurant_id).where(Visit.group_id == member.group_id).distinct()
+    ).all()
     try:
-        picked = pick_candidates(restaurants, filters)
+        picked = pick_candidates(restaurants, filters, visited_ids=visited_ids)
     except NoCandidatesError:
         raise api_error(422, "NO_CANDIDATES", "조건에 맞는 식당이 없어요. 조건을 완화해 보세요.")
 

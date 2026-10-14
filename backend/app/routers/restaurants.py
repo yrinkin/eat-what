@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query, Response
-from sqlalchemy import select
+from sqlalchemy import exists, select
 from sqlalchemy.orm import Session
 
 from app.deps import get_current_member, get_db
@@ -62,10 +62,11 @@ def _get_active(db: Session, restaurant_id: int, member: Member) -> Restaurant:
 def list_restaurants(
     q: str | None = Query(None, max_length=50, description="이름에 포함된 글자"),
     category: Category | None = Query(None),
+    visited: bool | None = Query(None, description="true: 가 본 곳만, false: 안 가 본 곳만"),
     member: Member = Depends(get_current_member),
     db: Session = Depends(get_db),
 ):
-    """F06: 그룹의 삭제되지 않은 식당 목록 (이름순). 이름 검색과 카테고리를 AND로 적용한다."""
+    """F06: 그룹의 삭제되지 않은 식당 목록 (이름순). 이름 검색, 카테고리, 방문 여부를 AND로 적용한다."""
     query = select(Restaurant).where(
         Restaurant.group_id == member.group_id, Restaurant.deleted_at.is_(None)
     )
@@ -75,6 +76,10 @@ def list_restaurants(
         query = query.where(Restaurant.name.contains(keyword, autoescape=True))
     if category is not None:
         query = query.where(Restaurant.category == category)
+    if visited is not None:
+        # 가 본 식당 = 그 그룹에 방문 기록이 1건 이상 있는 식당 (API-SPEC 정한 것 14)
+        has_visit = exists().where(Visit.restaurant_id == Restaurant.id, Visit.group_id == member.group_id)
+        query = query.where(has_visit if visited else ~has_visit)
     restaurants = db.scalars(query.order_by(Restaurant.name, Restaurant.id)).all()
     stats = restaurant_stats(db, [r.id for r in restaurants])
     return RestaurantList(items=[_to_out(r, stats.get(r.id, EMPTY)) for r in restaurants])
