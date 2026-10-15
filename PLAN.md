@@ -197,12 +197,25 @@ PC에서는 왼쪽에 그룹 목록을 둔 채 오른쪽에 그룹 화면을 보
   - 확인 결과 (2026-10-14): 새 폴더에 git clone 후 README 순서대로 venv·pip install·alembic upgrade head·uvicorn(8100번) 실행 → health {"status":"ok","db":"ok"}. 같은 폴더에서 pytest 30 passed, npm ci·lint·build 성공. DB 생성(sudo)은 이미 있는 DB라 .env 복사로 대신함. 확인용 폴더는 .env가 있어 삭제.
   - 남은 오류: 없음
 
+## 8장: EC2 3티어 배포 (2026-10-15 사용자 요청으로 추가)
+WSL 한 대에서 돌던 구조를 EC2 3대(front: 퍼블릭 서브넷, back: 프라이빗 서브넷 1, db: 프라이빗 서브넷 2)로 나눈다. VPC, 서브넷, NAT 게이트웨이, SSM 접속은 사용자가 준비해 두었다. 보안 그룹 설정과 EC2 안의 sudo 명령은 사용자가 실행하고, 결과를 받아 기록한다. 각 서버는 공개 저장소를 git clone 해서 쓴다. WSL의 기존 DB 데이터는 옮기지 않고, db 서버에는 빈 DB를 만들어 마이그레이션한다.
+- [x] T26: PRD.md와 PLAN.md에 EC2 3티어 배포 구조를 반영한다. 확인: PRD의 기술과 배포·완료 기준에 서버 3대의 서브넷, 허용 포트, DB 사용자 접속 범위가 적혀 있고, PLAN에 서버별 작업과 확인 방법이 있다.
+  - 변경 파일: PRD.md(기술과 배포, 완료 기준), PLAN.md(8장, 실행 기준)
+  - 확인 결과 (2026-10-15): PRD 기술과 배포에 front 퍼블릭·back 프라이빗 1·db 프라이빗 2, 80/8000/3306 허용 방향, 보안 그룹 ID 기준, SSM·NAT, back 사설 IP 전용 DB 사용자를 기록함. 완료 기준에 3티어 접속 차단 조건을 추가함. API-SPEC은 API 계약이 바뀌지 않아 수정하지 않음.
+  - 남은 오류: 없음
+- [ ] T27: 배포 파일을 서버별로 나눈다. Nginx 설정의 /api 대상(back 주소)과 lunch-api 서비스의 수신 주소를 설치할 때 넣는 값으로 바꾸고, back 서비스에서 mariadb.service 의존을 뺀다. front용·back용 배포 스크립트와 db 생성 SQL 안내를 만들고, 기존 deploy.sh(WSL 한 대 배포)는 그대로 동작하게 둔다. 확인: bash -n으로 스크립트 문법 검사. back 주소를 넣어 만든 Nginx 설정이 nginx -t를 통과한다. WSL에서 deploy.sh로 다시 배포해도 health가 ok다.
+- [ ] T28: db 서버에 MariaDB를 설치하고 bind-address를 사설 IP로 열고, lunch DB와 lunch_app@<back 사설 IP> 사용자를 만든다. 보안 그룹은 3306번을 back 보안 그룹에서만 허용한다. 확인: back에서 nc -zv <db 사설 IP> 3306 성공, front에서는 실패. back에서 lunch_app으로 접속해 SELECT 1.
+- [ ] T29: back 서버에 저장소를 clone 하고 backend/.env(DB_HOST=db 사설 IP, 권한 600)를 만든 뒤 venv 설치, alembic upgrade head, lunch-api 서비스(0.0.0.0:8000)를 등록한다. 보안 그룹은 8000번을 front 보안 그룹에서만 허용한다. 확인: back에서 curl 127.0.0.1:8000/api/v1/health가 status=ok, db=ok. front에서 curl <back 사설 IP>:8000/api/v1/health도 같은 결과.
+- [ ] T30: front 서버에 저장소를 clone 하고 화면을 빌드해 /var/www/lunch에 복사한 뒤, /api를 back 사설 IP로 넘기는 Nginx 설정을 켠다. 보안 그룹은 80번만 외부에 연다. 확인: front에서 curl 127.0.0.1/api/v1/health가 ok. 휴대폰과 PC에서 front 공인 IP로 회원가입, 그룹, 뽑기, 투표, 마감, 별점을 끝까지 수행한다. lunch-api를 재시작해도 데이터가 유지된다. back과 db에 공인 IP가 없다.
+- [ ] T31: README.md에 EC2 3티어 배포 방법(서버별 순서, 보안 그룹, 확인 명령)을 추가한다. 확인: README 순서대로 front·back·db 서버를 설정하면 health가 ok를 반환한다.
+
 ## 실행 기준
 T01: sudo mariadb
 T02~T22 백엔드: backend 폴더의 가상환경에서 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 T03~T23 프론트엔드: frontend 폴더에서 npm run dev -- --host 127.0.0.1 --port 5173
 T05 이후 마이그레이션: backend 폴더에서 alembic revision --autogenerate -m "<내용>" 후 alembic upgrade head
 T24: npm run build, sudo nginx -t, sudo systemctl reload nginx, sudo systemctl restart lunch-api
+T28~T30: 각 EC2에 SSM으로 접속해 실행한다. db는 sudo mariadb, back은 backend 폴더의 .venv와 sudo systemctl restart lunch-api, front는 npm run build와 sudo nginx -t, sudo systemctl reload nginx
 실제로 존재하는 파일과 폴더를 확인한 뒤 명령을 실행한다.
 
 ## 기록
