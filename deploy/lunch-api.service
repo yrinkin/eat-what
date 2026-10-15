@@ -1,16 +1,19 @@
-# 오늘 뭐 먹지? FastAPI 서비스 (PLAN T24)
-# 설치는 deploy/deploy.sh가 한다. __APP_USER__, __BACKEND_DIR__은 설치할 때 바뀐다.
+# 오늘 뭐 먹지? FastAPI 서비스 (PLAN T24, T27)
+# 설치는 deploy/deploy.sh(한 대) 또는 deploy/deploy-back.sh(EC2 back)가 한다.
+# __APP_USER__, __BACKEND_DIR__, __API_HOST__, __DB_UNIT__은 설치할 때 바뀐다.
+# __DB_UNIT__: 같은 서버에 MariaDB가 있으면 mariadb.service, DB가 다른 서버면 빈 값.
 [Unit]
 Description=Lunch API (FastAPI)
-After=network.target mariadb.service
-Wants=mariadb.service
+After=network-online.target __DB_UNIT__
+Wants=network-online.target __DB_UNIT__
 
 [Service]
 Type=simple
 User=__APP_USER__
 WorkingDirectory=__BACKEND_DIR__
-# 127.0.0.1에만 열어 외부에서 8000번으로 직접 접속할 수 없게 한다. 접속 정보는 backend/.env에서 읽는다.
-ExecStart=__BACKEND_DIR__/.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2
+# 한 대 배포는 127.0.0.1에만 열고, EC2 back은 0.0.0.0에 열되 보안 그룹으로 front에서만 받는다.
+# 접속 정보는 backend/.env에서 읽는다.
+ExecStart=__BACKEND_DIR__/.venv/bin/python -m uvicorn app.main:app --host __API_HOST__ --port 8000 --workers 2
 Restart=on-failure
 RestartSec=3
 
