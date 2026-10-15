@@ -216,10 +216,11 @@ WSL 한 대에서 돌던 구조를 EC2 3대(front: 퍼블릭 서브넷, back: �
   - 실행: back 서버(Amazon Linux, 10.10.20.20)에서 sudo dnf install python3.12, backend/.env(DB_HOST=10.10.30.30), bash deploy/deploy-back.sh. back에 설치했던 MariaDB는 사용자가 삭제함.
   - 확인 결과 (2026-10-15): deploy-back.sh 마지막 health {"status":"ok","db":"ok"}(Python 3.12.14). front에서 curl 10.10.20.20:8000/api/v1/health → {"status":"ok","db":"ok"}.
   - 남은 오류: 없음
-- [ ] T30: front 서버에 저장소를 clone 하고 화면을 빌드해 /var/www/lunch에 복사한 뒤, /api를 back 사설 IP로 넘기는 Nginx 설정을 켠다. 보안 그룹은 80번만 외부에 연다. 확인: front에서 curl 127.0.0.1/api/v1/health가 ok. 휴대폰과 PC에서 front 공인 IP로 회원가입, 그룹, 뽑기, 투표, 마감, 별점을 끝까지 수행한다. lunch-api를 재시작해도 데이터가 유지된다. back과 db에 공인 IP가 없다.
+- [x] T30: front 서버에 저장소를 clone 하고 화면을 빌드해 /var/www/lunch에 복사한 뒤, /api를 back 사설 IP로 넘기는 Nginx 설정을 켠다. 보안 그룹은 80번만 외부에 연다. 확인: front에서 curl 127.0.0.1/api/v1/health가 ok. 휴대폰과 PC에서 front 공인 IP로 회원가입, 그룹, 뽑기, 투표, 마감, 별점을 끝까지 수행한다. lunch-api를 재시작해도 데이터가 유지된다. back과 db에 공인 IP가 없다.
   - 실행: front 서버(Ubuntu, 10.10.10.10)에서 NodeSource Node 22, nginx, rsync 설치 후 bash deploy/deploy-front.sh 10.10.20.20.
   - 확인 결과 (2026-10-15): nginx -t 통과, 마지막 health {"status":"ok","db":"ok"}. 사용자가 브라우저로 front 공인 IP 접속 확인.
-  - 남은 오류: 휴대폰·PC 전체 흐름(회원가입~별점), lunch-api 재시작 후 데이터 유지, back·db 공인 IP 없음은 아직 확인하지 않음.
+  - 추가 확인 (2026-10-15, 사용자 확인): 휴대폰과 PC에서 front 공인 IP로 회원가입~그룹~뽑기~투표~마감~별점 전체 흐름 수행. back에서 lunch-api 재시작 후에도 데이터 유지. EC2 콘솔에서 back·db에 퍼블릭 IPv4 없음.
+  - 남은 오류: 없음 (front→db 3306 차단은 T28에서 처리)
 - [ ] T31: README.md에 EC2 3티어 배포 방법(서버별 순서, 보안 그룹, 확인 명령)을 추가한다. 확인: README 순서대로 front·back·db 서버를 설정하면 health가 ok를 반환한다.
 
 ## 실행 기준
