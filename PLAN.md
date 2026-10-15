@@ -224,10 +224,11 @@ WSL 한 대에서 돌던 구조를 EC2 3대(front: 퍼블릭 서브넷, back: �
   - 확인 결과 (2026-10-15): nginx -t 통과, 마지막 health {"status":"ok","db":"ok"}. 사용자가 브라우저로 front 공인 IP 접속 확인.
   - 추가 확인 (2026-10-15, 사용자 확인): 휴대폰과 PC에서 front 공인 IP로 회원가입~그룹~뽑기~투표~마감~별점 전체 흐름 수행. back에서 lunch-api 재시작 후에도 데이터 유지. EC2 콘솔에서 back·db에 퍼블릭 IPv4 없음.
   - 남은 오류: 없음 (front→db 3306 차단은 T28에서 처리)
-- [ ] T31: README.md에 EC2 3티어 배포 방법(서버별 순서, 보안 그룹, 확인 명령)을 추가한다. 확인: README 순서대로 front·back·db 서버를 설정하면 health가 ok를 반환한다.
+- [x] T31: README.md에 EC2 3티어 배포 방법(서버별 순서, 보안 그룹, 확인 명령)을 추가한다. 확인: README 순서대로 front·back·db 서버를 설정하면 health가 ok를 반환한다.
   - 변경 파일: README.md(구성 문단에 배포 방식 링크, '배포 (EC2 3티어)' 절 추가: 서버·서브넷·보안 그룹 표, db→back→front 순서, 확인 명령, 다시 배포, 막혔을 때 표, 폴더 구조의 deploy 파일 설명)
   - 확인 결과 (2026-10-15): README가 가리키는 deploy 스크립트·템플릿·.env.example이 모두 있고, 적은 경로(sites-available/lunch, conf.d/lunch.conf, 0.0.0.0:8000)가 스크립트와 같음. 명령은 T28~T30에서 실제로 성공한 순서를 옮김.
-  - 남은 오류: README의 '코드를 바꾼 뒤 다시 배포' 명령을 back·front에서 실행해 health ok 확인 필요(사용자 실행 대기).
+  - 추가 확인 (2026-10-15, 사용자 확인): README의 '코드를 바꾼 뒤 다시 배포' 명령(git pull 후 deploy-back.sh, deploy-front.sh 10.10.20.20)을 back·front에서 실행해 둘 다 health {"status":"ok","db":"ok"}.
+  - 남은 오류: 없음. 새 서버에 처음부터 README 순서로 설치하는 확인은 하지 않음(T28~T30에서 같은 명령으로 설치함).
 
 ## 실행 기준
 T01: sudo mariadb
