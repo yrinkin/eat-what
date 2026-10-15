@@ -1023,3 +1023,9 @@ button.danger {
     animation-duration: 3s;
   }
 }
+
+.vote-button + .creator-actions,
+.vote-list + .creator-actions,
+.vote-button + .hint {
+  margin-top: 8px;
+}
