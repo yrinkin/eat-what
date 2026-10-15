@@ -24,6 +24,13 @@ if ! (( MAJOR > 22 || (MAJOR == 22 && MINOR >= 12) || (MAJOR == 20 && MINOR >= 1
   exit 1
 fi
 
+for c in nginx rsync curl; do
+  if ! command -v "$c" > /dev/null && [[ ! -x "/usr/sbin/$c" ]]; then
+    echo "$c가 없습니다. Amazon Linux: sudo dnf install -y $c   Ubuntu: sudo apt install -y $c" >&2
+    exit 1
+  fi
+done
+
 echo "[1/3] 화면 빌드"
 (cd "$ROOT/frontend" && npm ci --silent && npm run build)
 
@@ -31,12 +38,21 @@ echo "[2/3] 화면 파일을 /var/www/lunch로 복사"
 sudo mkdir -p /var/www/lunch
 sudo rsync -a --delete "$ROOT/frontend/dist/" /var/www/lunch/
 
-echo "[3/3] Nginx 사이트 교체 (/api → ${BACK_IP}:8000, 기본 사이트는 연결만 뺀다)"
-sed -e "s#__API_UPSTREAM__#${BACK_IP}:8000#g" "$ROOT/deploy/nginx-lunch.conf" \
-  | sudo tee /etc/nginx/sites-available/lunch > /dev/null
-sudo ln -sf /etc/nginx/sites-available/lunch /etc/nginx/sites-enabled/lunch
-sudo rm -f /etc/nginx/sites-enabled/default
+echo "[3/3] Nginx 사이트 설치 (/api → ${BACK_IP}:8000)"
+if [[ -d /etc/nginx/sites-available ]]; then
+  # Ubuntu: 기본 사이트는 sites-available에 남겨 두고 연결만 뺀다.
+  sed -e "s#__API_UPSTREAM__#${BACK_IP}:8000#g" "$ROOT/deploy/nginx-lunch.conf" \
+    | sudo tee /etc/nginx/sites-available/lunch > /dev/null
+  sudo ln -sf /etc/nginx/sites-available/lunch /etc/nginx/sites-enabled/lunch
+  sudo rm -f /etc/nginx/sites-enabled/default
+else
+  # Amazon Linux: conf.d에 넣는다. nginx.conf의 기본 서버보다 이 설정의 default_server가 우선한다.
+  sed -e "s#__API_UPSTREAM__#${BACK_IP}:8000#g" "$ROOT/deploy/nginx-lunch.conf" \
+    | sudo tee /etc/nginx/conf.d/lunch.conf > /dev/null
+fi
 sudo nginx -t
+# Amazon Linux는 설치 직후 Nginx가 꺼져 있어 먼저 켠다.
+sudo systemctl enable --now nginx
 sudo systemctl reload nginx
 
 sleep 1

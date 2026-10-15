@@ -15,8 +15,23 @@ if [[ ! -f "$BACKEND_DIR/.env" ]]; then
 fi
 chmod 600 "$BACKEND_DIR/.env"
 
-echo "[1/4] 가상환경과 패키지 설치"
-[[ -d "$BACKEND_DIR/.venv" ]] || python3 -m venv "$BACKEND_DIR/.venv"
+# 코드는 Python 3.12 이상이 필요하다. Amazon Linux 2023의 기본 python3는 3.9라서 python3.12를 따로 찾는다.
+py_ok() { "$1" -c 'import sys; sys.exit(sys.version_info < (3, 12))' 2>/dev/null; }
+PYTHON=""
+for p in python3.13 python3.12 python3; do
+  if command -v "$p" > /dev/null && py_ok "$p"; then PYTHON="$p"; break; fi
+done
+if [[ -z "$PYTHON" ]]; then
+  echo "Python 3.12 이상이 필요합니다. Amazon Linux: sudo dnf install -y python3.12   Ubuntu: sudo apt install -y python3-venv" >&2
+  exit 1
+fi
+if [[ -d "$BACKEND_DIR/.venv" ]] && ! py_ok "$BACKEND_DIR/.venv/bin/python"; then
+  echo "backend/.venv가 Python 3.12 미만으로 만들어져 있습니다. rm -rf backend/.venv 후 다시 실행하세요." >&2
+  exit 1
+fi
+
+echo "[1/4] 가상환경과 패키지 설치 ($("$PYTHON" -V))"
+[[ -d "$BACKEND_DIR/.venv" ]] || "$PYTHON" -m venv "$BACKEND_DIR/.venv"
 "$BACKEND_DIR/.venv/bin/pip" install --quiet -r "$BACKEND_DIR/requirements.txt"
 
 echo "[2/4] DB 마이그레이션 (db 서버에 접속되어야 한다)"

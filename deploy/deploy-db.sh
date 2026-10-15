@@ -37,7 +37,7 @@ echo "[2/2] bind-address 확인"
 BIND="$(sudo mariadb -Nse 'SELECT @@bind_address')"
 echo "현재 bind-address: ${BIND:-(비어 있음, 모든 주소)}"
 if [[ "$BIND" == "127.0.0.1" || "$BIND" == "localhost" ]]; then
-  echo "back에서 접속하려면 /etc/mysql/mariadb.conf.d/50-server.cnf의 bind-address를 0.0.0.0(또는 이 서버의 사설 IP)으로 바꾸고"
+  echo "back에서 접속하려면 MariaDB 설정(Ubuntu: /etc/mysql/mariadb.conf.d/50-server.cnf, Amazon Linux: /etc/my.cnf.d/mariadb-server.cnf)의 bind-address를 0.0.0.0(또는 이 서버의 사설 IP)으로 바꾸고"
   echo "sudo systemctl restart mariadb 를 실행하세요. 3306번은 보안 그룹에서 back 보안 그룹만 허용합니다."
 fi
-echo "완료. back 서버에서 nc -zv <이 서버 사설 IP> 3306 으로 확인하세요."
+echo "완료. back 서버에서 timeout 3 bash -c '</dev/tcp/<이 서버 사설 IP>/3306' && echo open 으로 확인하세요."
