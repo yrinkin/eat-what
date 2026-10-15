@@ -209,11 +209,12 @@ WSL 한 대에서 돌던 구조를 EC2 3대(front: 퍼블릭 서브넷, back: �
   - 추가 (2026-10-15): EC2가 Amazon Linux(ec2-user)라 deploy-back.sh는 Python 3.12 이상(python3.13·3.12·python3 순)을 찾고 3.12 미만 .venv는 안내 후 멈추게, deploy-front.sh는 nginx·rsync·curl 유무 확인, sites-available이 없으면 /etc/nginx/conf.d/lunch.conf에 설치, systemctl enable --now nginx를 하게 고침. deploy-db.sh 안내에 Amazon Linux 설정 경로와 nc 대신 /dev/tcp 확인을 넣음. 확인: bash -n 통과, Amazon Linux 기본 서버(server_name _, default_server 없음)와 함께 넣은 설정이 nginx -t 통과(server_name 충돌 경고만, 요청은 default_server인 이 설정이 받음).
   - 추가 확인 (2026-10-15): 사용자가 WSL에서 deploy.sh 재배포. 설치된 lunch-api.service가 새 템플릿(network-online.target, mariadb.service, 127.0.0.1)으로 바뀌었고 Nginx proxy_pass는 127.0.0.1:8000. lunch-api·nginx active, curl 127.0.0.1/api/v1/health → {"status":"ok","db":"ok"}.
   - 남은 오류: 없음
-- [ ] T28: db 서버에 MariaDB를 설치하고 bind-address를 사설 IP로 열고, lunch DB와 lunch_app@<back 사설 IP> 사용자를 만든다. 보안 그룹은 3306번을 back 보안 그룹에서만 허용한다. 확인: back에서 nc -zv <db 사설 IP> 3306 성공, front에서는 실패. back에서 lunch_app으로 접속해 SELECT 1.
+- [x] T28: db 서버에 MariaDB를 설치하고 bind-address를 사설 IP로 열고, lunch DB와 lunch_app@<back 사설 IP> 사용자를 만든다. 보안 그룹은 3306번을 back 보안 그룹에서만 허용한다. 확인: back에서 nc -zv <db 사설 IP> 3306 성공, front에서는 실패. back에서 lunch_app으로 접속해 SELECT 1.
   - 실행: 사용자가 db 서버(Amazon Linux, 10.10.30.30)에서 lunch DB와 lunch_app@'%'를 직접 만듦(deploy-db.sh는 쓰지 않음). bind_address는 NULL(모든 주소).
   - 확인 결과 (2026-10-15): back(10.10.20.20)에서 lunch_app으로 접속해 마이그레이션 성공(T29). 처음에는 back의 DB_HOST가 127.0.0.1이라 back에 설치된 MariaDB로 접속해 1045, DB_HOST 수정 후 비밀번호 불일치로 1045 → 양쪽 비밀번호를 새로 맞춰 해결. front(10.10.10.10)에서 10.10.30.30:3306 접속이 open으로 나옴(차단되어야 함).
   - 추가 확인 (2026-10-15, 사용자 확인): db 보안 그룹의 3306을 back 보안 그룹만 허용하도록 수정. front에서 10.10.30.30:3306 → blocked.
-  - 남은 오류: DB 사용자가 lunch_app@'%'라 PRD의 back 사설 IP 전용 조건과 다름. 사용자 결정 대기.
+  - 결정 (2026-10-15): 사용자 결정으로 lunch_app@'%'를 유지하고 접속 제한은 보안 그룹으로 한다. PRD 기술과 배포 문장을 이에 맞춰 수정.
+  - 남은 오류: 없음
 - [x] T29: back 서버에 저장소를 clone 하고 backend/.env(DB_HOST=db 사설 IP, 권한 600)를 만든 뒤 venv 설치, alembic upgrade head, lunch-api 서비스(0.0.0.0:8000)를 등록한다. 보안 그룹은 8000번을 front 보안 그룹에서만 허용한다. 확인: back에서 curl 127.0.0.1:8000/api/v1/health가 status=ok, db=ok. front에서 curl <back 사설 IP>:8000/api/v1/health도 같은 결과.
   - 실행: back 서버(Amazon Linux, 10.10.20.20)에서 sudo dnf install python3.12, backend/.env(DB_HOST=10.10.30.30), bash deploy/deploy-back.sh. back에 설치했던 MariaDB는 사용자가 삭제함.
   - 확인 결과 (2026-10-15): deploy-back.sh 마지막 health {"status":"ok","db":"ok"}(Python 3.12.14). front에서 curl 10.10.20.20:8000/api/v1/health → {"status":"ok","db":"ok"}.
